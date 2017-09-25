@@ -161,7 +161,7 @@ softmaxReg.Predict(testX, testY);
 #define _LREGRESSION_H_
 
 
-#include "LDataStruct/LMatrix.h"
+#include "LMatrix.h"
 
 typedef LMatrix<float> LRegressionMatrix;
 
