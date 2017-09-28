@@ -2,6 +2,9 @@
 
 #include "../../../Src/LRegression.h"
 
+#include <cstdio>
+#include <cstdlib>
+
 
 int main()
 {
@@ -27,7 +30,7 @@ int main()
 
 
     // 定义线性回归对象
-    LLinearRegression linearReg(4, 1);
+    LLinearRegression linearReg(1);
 
     // 训练模型
     for (unsigned int i = 0; i < 500; i++)
@@ -39,6 +42,12 @@ int main()
     LRegressionMatrix yVector;
     linearReg.Predict(xMatrix, yVector);
 
+    for (unsigned int i = 0; i < yVector.RowLen; i++)
+    {
+        printf("%.5f\n", yVector[i][0]);
+    }
+
+    system("pause");
 
     return 0;
 }

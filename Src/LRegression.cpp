@@ -9,7 +9,7 @@ namespace Regression
     /// @brief 样本矩阵中增加常数项, 添加在最后一列, 值为1.0f
     /// @param[in] sampleMatrix 样本矩阵
     /// @param[in] newSampleMatrix 添加常数项后的样本矩阵
-    void SampleAddConstantItem(IN const LRegressionMatrix& sampleMatrix, OUT LRegressionMatrix& newSampleMatrix)
+    void SamplexAddConstant(IN const LRegressionMatrix& sampleMatrix, OUT LRegressionMatrix& newSampleMatrix)
     {
         // 每个样本中最后一项增加常数项的特征值:1.0
         newSampleMatrix.Reset(sampleMatrix.RowLen, sampleMatrix.ColumnLen + 1);
@@ -30,9 +30,8 @@ namespace Regression
 class CLinearRegression
 {
 public:
-    CLinearRegression(IN unsigned int m, IN unsigned int n)
+    CLinearRegression(IN unsigned int n)
     {
-        m_M = m;
         m_N = n;
 
         m_wVector.Reset(n + 1, 1, 0.0f);
@@ -47,7 +46,7 @@ public:
     bool TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector, IN float alpha)
     {
         // 检查参数
-        if (m_M < 2 || m_N < 1)
+        if (m_N < 1)
             return false;
 
         if (xMatrix.RowLen < 1)
@@ -64,7 +63,7 @@ public:
             return false;
 
         LRegressionMatrix X;
-        Regression::SampleAddConstantItem(xMatrix, X);
+        Regression::SamplexAddConstant(xMatrix, X);
 
         const LRegressionMatrix& Y = yVector;
         LRegressionMatrix& W = m_wVector;
@@ -100,7 +99,7 @@ public:
             return false;
 
         LRegressionMatrix X;
-        Regression::SampleAddConstantItem(xMatrix, X);
+        Regression::SamplexAddConstant(xMatrix, X);
 
         LRegressionMatrix::MUL(X, m_wVector, yVector);
 
@@ -113,10 +112,10 @@ private:
     LRegressionMatrix m_wVector; ///<权重矩阵(列向量)
 };
 
-LLinearRegression::LLinearRegression(IN unsigned int m, IN unsigned int n)
+LLinearRegression::LLinearRegression(IN unsigned int n)
     : m_pLinearRegression(0)
 {
-    m_pLinearRegression = new CLinearRegression(m, n);
+    m_pLinearRegression = new CLinearRegression(n);
 }
 
 LLinearRegression::~LLinearRegression()
@@ -188,7 +187,7 @@ public:
         }
 
         LRegressionMatrix X;
-        Regression::SampleAddConstantItem(xMatrix, X);
+        Regression::SamplexAddConstant(xMatrix, X);
 
         const LRegressionMatrix& Y = yVector;
 
@@ -233,7 +232,7 @@ public:
             return false;
 
         LRegressionMatrix X;
-        Regression::SampleAddConstantItem(xMatrix, X);
+        Regression::SamplexAddConstant(xMatrix, X);
 
         yVector.Reset(X.RowLen, 1, 0.0f);
         LRegressionMatrix::MUL(X, m_wVector, yVector);
@@ -327,7 +326,7 @@ public:
 
         // 增加常数项后的样本矩阵
         LRegressionMatrix X;
-        Regression::SampleAddConstantItem(xMatrix, X);
+        Regression::SamplexAddConstant(xMatrix, X);
 
         // 权重矩阵
         LRegressionMatrix& W = m_wMatrix;
@@ -381,7 +380,7 @@ public:
         yMatrix.Reset(xMatrix.RowLen, m_K, 0.0f);
 
         LRegressionMatrix X;
-        Regression::SampleAddConstantItem(xMatrix, X);
+        Regression::SamplexAddConstant(xMatrix, X);
 
         this->SampleProbK(X, m_wMatrix, yMatrix);
 

@@ -45,7 +45,7 @@ LRegressionMatrix yMatrix(4, 1, trainY);
 
 
 // 定义线性回归对象
-LLinearRegression linearReg(4, 1);
+LLinearRegression linearReg(1);
 
 // 训练模型
 for (unsigned int i = 0; i < 500; i++)
@@ -172,9 +172,8 @@ class LLinearRegression
 {
 public:
     /// @brief 构造函数
-    /// @param[in] m 训练样本总个数, 不能小于2
     /// @param[in] n 样本特征值个数, 不能小于1
-    LLinearRegression(IN unsigned int m, IN unsigned int n);
+    LLinearRegression(IN unsigned int n);
 
     /// @brief 析构函数
     ~LLinearRegression();
