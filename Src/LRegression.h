@@ -19,7 +19,7 @@
 /// 批量梯度下降算法: 综合以上两种
 /// @author Burnell_Liu Email:burnell_liu@outlook.com
 /// @version   
-/// @date 10:10:2015
+/// @date 2017/09/29
 
 /*  使用线性回归示例代码如下:
 
