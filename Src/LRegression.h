@@ -45,17 +45,28 @@ LRegressionMatrix yMatrix(4, 1, trainY);
 
 
 // 定义线性回归对象
-LLinearRegression linearReg(1);
+LLinearRegression linearReg;
 
 // 训练模型
-for (unsigned int i = 0; i < 500; i++)
+// 计算每一次训练后的损失值
+for (unsigned int i = 0; i < 10; i++)
 {
     linearReg.TrainModel(xMatrix, yMatrix, 0.01f);
+    float loss = linearReg.LossValue(xMatrix, yMatrix);
+    printf("Train Time: %u  ", i);
+    printf("Loss Value: %f\n", loss);
 }
 
 // 进行预测
 LRegressionMatrix yVector;
 linearReg.Predict(xMatrix, yVector);
+
+printf("Predict Value: ");
+for (unsigned int i = 0; i < yVector.RowLen; i++)
+{
+    printf("%.5f  ", yVector[i][0]);
+}
+printf("\n");
 
 */
 
@@ -172,8 +183,7 @@ class LLinearRegression
 {
 public:
     /// @brief 构造函数
-    /// @param[in] n 样本特征值个数, 不能小于1
-    LLinearRegression(IN unsigned int n);
+    LLinearRegression();
 
     /// @brief 析构函数
     ~LLinearRegression();
@@ -193,6 +203,12 @@ public:
     /// @param[out] yVector 存储预测的结果向量(列向量)
     /// @return 成功返回true, 失败返回false(模型未训练或参数错误的情况下会返回失败)
     bool Predict(IN const LRegressionMatrix& xMatrix, OUT LRegressionMatrix& yVector) const;
+
+    /// @brief 计算损失值, 损失值为大于等于0的数, 损失值越小模型越好
+    /// @param[in] xMatrix 样本矩阵, 每一行代表一个样本, 每一列代表样本的一个特征
+    /// @param[in] yVector(列向量) 样本输出向量, 每一行代表一个样本
+    /// @return 成功返回损失值, 失败返回-1.0f(参数错误的情况下会返回失败)
+    float LossValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const;
 
 private:
     CLinearRegression* m_pLinearRegression; ///< 线性回归实现对象

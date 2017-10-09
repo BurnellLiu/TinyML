@@ -30,11 +30,9 @@ namespace Regression
 class CLinearRegression
 {
 public:
-    CLinearRegression(IN unsigned int n)
+    CLinearRegression()
     {
-        m_N = n;
-
-        m_wVector.Reset(n + 1, 1, 0.0f);
+        m_N = 0;
     }
 
     ~CLinearRegression()
@@ -45,20 +43,25 @@ public:
     /// @brief 训练模型
     bool TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector, IN float alpha)
     {
+        // 第一次训练, 记录下特征值数量, 并且初始化权重向量为0.0
+        if (m_N == 0)
+        {
+            m_N = xMatrix.ColumnLen;
+            m_wVector.Reset(m_N + 1, 1, 0.0f);
+        }
+
+
         // 检查参数
         if (m_N < 1)
             return false;
-
         if (xMatrix.RowLen < 1)
             return false;
         if (xMatrix.ColumnLen != m_N)
             return false;
-
         if (yVector.ColumnLen != 1)
             return false;
         if (yVector.RowLen != xMatrix.RowLen)
             return false;
-
         if (alpha <= 0.0f)
             return false;
 
@@ -90,7 +93,8 @@ public:
     bool Predict(IN const LRegressionMatrix& xMatrix, OUT LRegressionMatrix& yVector) const
     {
         // 检查参数
-        if (m_M < 2 || m_N < 1)
+        // 特征值小于1说明模型还没有训练
+        if (m_N < 1)
             return false;
 
         if (xMatrix.RowLen < 1)
@@ -106,16 +110,46 @@ public:
         return true;
     }
 
+    /// @brief 计算损失值
+    float LossValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
+    {
+        // 检查参数
+        // 特征值小于1说明模型还没有训练
+        if (m_N < 1)
+            return -1.0f;
+        if (xMatrix.RowLen < 1)
+            return -1.0f;
+        if (xMatrix.RowLen != yVector.RowLen)
+            return -1.0f;
+        if (xMatrix.ColumnLen != m_N)
+            return -1.0f;
+        if (yVector.ColumnLen != 1)
+            return -1.0f;
+
+        LRegressionMatrix X;
+        LRegressionMatrix Y;
+        Regression::SamplexAddConstant(xMatrix, X);
+
+        LRegressionMatrix::MUL(X, m_wVector, Y);
+        LRegressionMatrix::SUB(Y, yVector, Y);
+        LRegressionMatrix YT;
+        LRegressionMatrix::T(Y, YT);
+
+        LRegressionMatrix LOSS;
+        LRegressionMatrix::MUL(YT, Y, LOSS);
+
+        return LOSS[0][0]/2.0f;
+    }
+
 private:
-    unsigned int m_M; ///< 样本总个数
     unsigned int m_N; ///< 样本特征值个数
     LRegressionMatrix m_wVector; ///<权重矩阵(列向量)
 };
 
-LLinearRegression::LLinearRegression(IN unsigned int n)
+LLinearRegression::LLinearRegression()
     : m_pLinearRegression(0)
 {
-    m_pLinearRegression = new CLinearRegression(n);
+    m_pLinearRegression = new CLinearRegression();
 }
 
 LLinearRegression::~LLinearRegression()
@@ -135,6 +169,11 @@ bool LLinearRegression::TrainModel(IN const LRegressionMatrix& xMatrix, IN const
 bool LLinearRegression::Predict(IN const LRegressionMatrix& xMatrix, OUT LRegressionMatrix& yVector) const
 {
     return m_pLinearRegression->Predict(xMatrix, yVector);
+}
+
+float LLinearRegression::LossValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
+{
+    return m_pLinearRegression->LossValue(xMatrix, yVector);
 }
 
 /// @brief 逻辑回归(分类)实现类

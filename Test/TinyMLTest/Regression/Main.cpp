@@ -30,22 +30,28 @@ int main()
 
 
     // 定义线性回归对象
-    LLinearRegression linearReg(1);
+    LLinearRegression linearReg;
 
     // 训练模型
-    for (unsigned int i = 0; i < 500; i++)
+    // 计算每一次训练后的损失值
+    for (unsigned int i = 0; i < 10; i++)
     {
         linearReg.TrainModel(xMatrix, yMatrix, 0.01f);
+        float loss = linearReg.LossValue(xMatrix, yMatrix);
+        printf("Train Time: %u  ", i);
+        printf("Loss Value: %f\n", loss);
     }
 
     // 进行预测
     LRegressionMatrix yVector;
     linearReg.Predict(xMatrix, yVector);
 
+    printf("Predict Value: ");
     for (unsigned int i = 0; i < yVector.RowLen; i++)
     {
-        printf("%.5f\n", yVector[i][0]);
+        printf("%.5f  ", yVector[i][0]);
     }
+    printf("\n");
 
     system("pause");
 
