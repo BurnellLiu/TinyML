@@ -53,21 +53,11 @@ for (unsigned int i = 0; i < 10; i++)
 {
     linearReg.TrainModel(xMatrix, yMatrix, 0.01f);
     float loss = linearReg.LossValue(xMatrix, yMatrix);
-    printf("Train Time: %u  ", i);
-    printf("Loss Value: %f\n", loss);
 }
 
 // 进行预测
 LRegressionMatrix yVector;
 linearReg.Predict(xMatrix, yVector);
-
-printf("Predict Value: ");
-for (unsigned int i = 0; i < yVector.RowLen; i++)
-{
-    printf("%.5f  ", yVector[i][0]);
-}
-printf("\n");
-
 */
 
 
@@ -98,12 +88,14 @@ float trainLabel[12] =
 LRegressionMatrix Y(6, 1, trainLabel);
 
 // 定义逻辑回归
-LLogisticRegression logisticReg(6, 6);
+LLogisticRegression logisticReg;
 
-// 训练500次
-for (unsigned int i = 0; i < 500; i++)
+// 训练100次
+// 计算每一次训练后的似然值
+for (unsigned int i = 0; i < 100; i++)
 {
-    logisticReg.TrainModel(X, Y, 0.1f);
+    logisticReg.TrainModel(X, Y, 0.6f);
+    float likelihood = logisticReg.LikelihoodValue(X, Y);
 }
 
 // 测试样本
@@ -256,7 +248,7 @@ public:
     /// @param[in] xMatrix 样本矩阵, 每一行代表一个样本, 每一列代表样本的一个特征
     /// @param[in] yVector(列向量) 样本输出向量, 每一行代表一个样本, 值只能为REGRESSION_ONE或REGRESSION_ZERO
     /// @return 成功返回似然值, 失败返回-1.0f(参数错误的情况下会返回失败)
-    float LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector);
+    float LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const;
 
 private:
     CLogisticRegression* m_pLogisticRegression; ///< 逻辑回归实现类

@@ -292,7 +292,7 @@ public:
     }
 
     /// @brief 计算似然值, 似然值为0.0~1.0之间的数, 似然值值越大模型越好
-    float LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector)
+    float LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
     {
         // 检查参数
         // 特征值小于1说明模型还没有训练
@@ -309,6 +309,19 @@ public:
 
         LRegressionMatrix predictY;
         this->Predict(xMatrix, predictY);
+
+        float likelihood = 1.0f;
+        for (unsigned int i = 0; i < yVector.RowLen; i++)
+        {
+            if (yVector[i][0] == REGRESSION_ONE)
+                likelihood *= predictY[i][0];
+            else if (yVector[i][0] == REGRESSION_ZERO)
+                likelihood *= (1.0f - predictY[i][0]);
+            else
+                return -1.0f;
+        }
+
+        return likelihood;
     }
 
 private:
@@ -348,6 +361,11 @@ bool LLogisticRegression::TrainModel(IN const LRegressionMatrix& xMatrix, IN con
 bool LLogisticRegression::Predict(IN const LRegressionMatrix& xMatrix, OUT LRegressionMatrix& yVector) const
 {
     return m_pLogisticRegression->Predict(xMatrix, yVector);
+}
+
+float LLogisticRegression::LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
+{
+    return m_pLogisticRegression->LikelihoodValue(xMatrix, yVector);
 }
 
 

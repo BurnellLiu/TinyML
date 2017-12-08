@@ -82,10 +82,14 @@ void TestLogisticRegression()
     // 定义逻辑回归
     LLogisticRegression logisticReg;
 
-    // 训练500次
-    for (unsigned int i = 0; i < 500; i++)
+    // 训练100次
+    // 计算每一次训练后的似然值
+    for (unsigned int i = 0; i < 100; i++)
     {
-        logisticReg.TrainModel(X, Y, 0.1f);
+        logisticReg.TrainModel(X, Y, 0.6f);
+        float likelihood = logisticReg.LikelihoodValue(X, Y);
+        printf("Train Time: %u  ", i);
+        printf("Likelihood Value: %f\n", likelihood);
     }
 
     // 测试样本
