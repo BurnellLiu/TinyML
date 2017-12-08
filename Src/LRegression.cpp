@@ -185,11 +185,10 @@ class CLogisticRegression
 {
 public:
     /// @brief 构造函数
-    CLogisticRegression(IN unsigned int m, IN unsigned int n)
+    CLogisticRegression()
     {
-        m_M = m;
-        m_N = n;
-        m_wVector.Reset(n + 1, 1, 0.0f);
+        m_N = 0;
+        
     }
 
     /// @brief 析构函数
@@ -201,8 +200,15 @@ public:
     /// @brief 训练模型
     bool TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector, IN float alpha)
     {
+        // 第一次训练, 记录下特征值数量, 并且初始化权重向量为0.0
+        if (m_N == 0)
+        {
+            m_N = xMatrix.ColumnLen;
+            m_wVector.Reset(m_N + 1, 1, 0.0f);
+        }
+
         // 检查参数
-        if (m_M < 2 || m_N < 1)
+        if (m_N < 1)
             return false;
 
         if (xMatrix.RowLen < 1)
@@ -262,7 +268,7 @@ public:
     bool Predict(IN const LRegressionMatrix& xMatrix, OUT LRegressionMatrix& yVector) const
     {
         // 检查参数
-        if (m_M < 2 || m_N < 1)
+        if (m_N < 1)
             return false;
 
         if (xMatrix.RowLen < 1)
@@ -285,6 +291,26 @@ public:
 
     }
 
+    /// @brief 计算似然值, 似然值为0.0~1.0之间的数, 似然值值越大模型越好
+    float LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector)
+    {
+        // 检查参数
+        // 特征值小于1说明模型还没有训练
+        if (m_N < 1)
+            return -1.0f;
+        if (xMatrix.RowLen < 1)
+            return -1.0f;
+        if (xMatrix.RowLen != yVector.RowLen)
+            return -1.0f;
+        if (xMatrix.ColumnLen != m_N)
+            return -1.0f;
+        if (yVector.ColumnLen != 1)
+            return -1.0f;
+
+        LRegressionMatrix predictY;
+        this->Predict(xMatrix, predictY);
+    }
+
 private:
     /// @brief S型函数
     /// @param[in] input 输入值
@@ -295,15 +321,14 @@ private:
     }
 
 private:
-    unsigned int m_M; ///< 样本总个数
     unsigned int m_N; ///< 样本特征值个数
     LRegressionMatrix m_wVector; ///<权重矩阵(列向量)
 };
 
-LLogisticRegression::LLogisticRegression(IN unsigned int m, IN unsigned int n)
+LLogisticRegression::LLogisticRegression()
     : m_pLogisticRegression(0)
 {
-    m_pLogisticRegression = new CLogisticRegression(m, n); 
+    m_pLogisticRegression = new CLogisticRegression(); 
 }
 
 LLogisticRegression::~LLogisticRegression()
@@ -325,7 +350,6 @@ bool LLogisticRegression::Predict(IN const LRegressionMatrix& xMatrix, OUT LRegr
     return m_pLogisticRegression->Predict(xMatrix, yVector);
 }
 
-void PrintMatrix(const LMatrix<float>& matrix);
 
 class CSoftmaxRegression
 {

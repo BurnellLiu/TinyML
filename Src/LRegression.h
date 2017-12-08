@@ -231,9 +231,7 @@ class LLogisticRegression
 {
 public:
     /// @brief 构造函数
-    /// @param[in] m 训练样本总个数, 不能小于2
-    /// @param[in] n 样本特征值个数, 不能小于1
-    LLogisticRegression(IN unsigned int m, IN unsigned int n);
+    LLogisticRegression();
 
     /// @brief 析构函数
     ~LLogisticRegression();
@@ -253,6 +251,12 @@ public:
     /// @param[out] yVector 存储预测的结果向量(列向量), 值为REGRESSION_ONE标记的概率
     /// @return 成功返回true, 失败返回false(模型未训练或参数错误的情况下会返回失败)
     bool Predict(IN const LRegressionMatrix& xMatrix, OUT LRegressionMatrix& yVector) const;
+
+    /// @brief 计算似然值, 似然值为0.0~1.0之间的数, 似然值值越大模型越好
+    /// @param[in] xMatrix 样本矩阵, 每一行代表一个样本, 每一列代表样本的一个特征
+    /// @param[in] yVector(列向量) 样本输出向量, 每一行代表一个样本, 值只能为REGRESSION_ONE或REGRESSION_ZERO
+    /// @return 成功返回似然值, 失败返回-1.0f(参数错误的情况下会返回失败)
+    float LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector);
 
 private:
     CLogisticRegression* m_pLogisticRegression; ///< 逻辑回归实现类

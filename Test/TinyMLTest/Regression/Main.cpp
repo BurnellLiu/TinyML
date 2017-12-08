@@ -5,8 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-
-int main()
+void TestLinearRegression()
 {
     // 定义训练样本
     float trainX[4] =
@@ -52,6 +51,66 @@ int main()
         printf("%.5f  ", yVector[i][0]);
     }
     printf("\n");
+}
+
+void TestLogisticRegression()
+{
+    // 训练样本数据
+    float trainSample[36] =
+    {
+        1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+        1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f
+    };
+    LRegressionMatrix X(6, 6, trainSample);
+
+    // 训练样本标签数据
+    float trainLabel[12] =
+    {
+        1.0f,
+        1.0f,
+        1.0f,
+        0.0f,
+        0.0f,
+        0.0f
+    };
+    LRegressionMatrix Y(6, 1, trainLabel);
+
+    // 定义逻辑回归
+    LLogisticRegression logisticReg;
+
+    // 训练500次
+    for (unsigned int i = 0; i < 500; i++)
+    {
+        logisticReg.TrainModel(X, Y, 0.1f);
+    }
+
+    // 测试样本
+    float testSample[12] =
+    {
+        1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f
+    };
+    LRegressionMatrix testX(2, 6, testSample);
+
+    // 对测试样本进行预测
+    LRegressionMatrix testY;
+    logisticReg.Predict(testX, testY);
+    printf("Predict Value: ");
+    for (unsigned int i = 0; i < testY.RowLen; i++)
+    {
+        printf("%.5f  ", testY[i][0]);
+    }
+    printf("\n");
+}
+
+int main()
+{
+    
+    TestLogisticRegression();
 
     system("pause");
 
