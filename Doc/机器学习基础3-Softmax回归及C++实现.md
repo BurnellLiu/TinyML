@@ -143,3 +143,6 @@ $$
 \frac{\partial L(\Theta)}{\partial \theta^j} &= \sum\_{i=0}^{m-1}(1 \\{y^i=j\\}x^i -\frac{\partial}{\partial \theta^j} ( \sum\_{j=0}^{k-1}1 \\{y^i=j\\} \log \sum\_{l=0}^{k-1}e^{x^i\theta^l}) )
 \\\
 \end{align}
+
+
+http://m.blog.csdn.net/wangyangzhizhou/article/details/75088106
