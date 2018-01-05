@@ -26,7 +26,7 @@ x\theta & = \theta\_0 + \theta\_1x\_1 + \theta\_2x\_2 + \cdots + \theta\_nx\_n \
 \\\
 \end{align}
 
-在在多分类问题中 $y$ 可以取 $k$ 个不同的值，也就是 $y\in\\{1,2,...,k \\}$ 。因为每个类别都需要一个特征参数 $\theta$ ，所以有：
+在在多分类问题中 $y$ 可以取 $k$ 个不同的值，也就是 $y\in\\{0,1,2,...,k-1 \\}$ 。因为每个类别都需要一个特征参数 $\theta$ ，所以有：
 
 \begin{align}
 \\\
@@ -43,12 +43,12 @@ x\theta & = \theta\_0 + \theta\_1x\_1 + \theta\_2x\_2 + \cdots + \theta\_nx\_n \
 \\\
 h\_\Theta(x) & = 
 \begin{bmatrix}
+p(y=0|x;\Theta) \\\\
 p(y=1|x;\Theta) \\\\
-p(y=2|x;\Theta) \\\\
 \vdots    \\\\
-p(y=k|x;\Theta)
+p(y=k-1|x;\Theta)
 \end{bmatrix}
-= \frac{1}{\sum\_{j=0}^{k-1}e^{x\theta^j}}
+= \frac{1}{\sum\_{l=0}^{k-1}e^{x\theta^l}}
 \begin{bmatrix}
 e^{x\theta^0} \\\\
 e^{x\theta^1} \\\\
@@ -58,7 +58,7 @@ e^{x\theta^{k-1}}
 \\\
 \end{align}
 
-注意 $\frac{1}{\sum\_{j=0}^{k-1}e^{x\theta^j}}$ 这一项为对概率分布进行归一化，使得所有概率和为1。
+注意 $\frac{1}{\sum\_{l=0}^{k-1}e^{x\theta^l}}$ 这一项为对概率分布进行归一化，使得所有概率和为1。
 
 设训练样本数为 $m$，训练样本集为 $X$ ，训练输出集为 $Y$ ，如下：
 \begin{align}
@@ -82,3 +82,64 @@ y^{m-1}
 \end{align}
 
 我们的目标是已知 $X$ 和 $Y$ 的情况下得到最优的 $\Theta$。
+
+##似然函数##
+哪个 $\Theta$ 是最优的？我们需要先定义似然函数：
+
+\begin{align}
+\\\
+L(\Theta) &= \prod\_{i=0}^{m-1} P(y^i \mid x^i)
+\\\
+\\\
+L(\Theta) &= \prod\_{i=0}^{m-1} \sum\_{j=0}^{k-1}1 \\{y^i=j\\} \frac{e^{x^i\theta^j}}{\sum\_{l=0}^{k-1}e^{x^i\theta^l}}
+\\\
+\end{align}
+
+上面的公式中 $1\\{ \cdot \\}$ 是示性函数，其取值规则为：
+
+$$ 1\\{ 值为真的表达式 \\} = 1 $$ 
+
+$$ 1\\{ 值为假的表达式 \\} = 0 $$ 
+
+我们在似然函数中引入自然对数以方便后续的求导，则：
+
+\begin{align}
+\\\
+L(\Theta) &= \log(\prod\_{i=0}^{m-1} \sum\_{j=0}^{k-1}1 \\{y^i=j\\} \frac{e^{x^i\theta^j}}{\sum\_{l=0}^{k-1}e^{x^i\theta^l}})
+\\\
+\\\
+L(\Theta) &= \sum\_{i=0}^{m-1}\log(\sum\_{j=0}^{k-1}1 \\{y^i=j\\} \frac{e^{x^i\theta^j}}{\sum\_{l=0}^{k-1}e^{x^i\theta^l}})
+\\\
+\\\
+L(\Theta) &= \sum\_{i=0}^{m-1}\sum\_{j=0}^{k-1}1 \\{y^i=j\\} \log(\frac{e^{x^i\theta^j}}{\sum\_{l=0}^{k-1}e^{x^i\theta^l}})
+\\\
+\\\
+L(\Theta) &= \sum\_{i=0}^{m-1}\sum\_{j=0}^{k-1}1 \\{y^i=j\\}(\log e^{x^i\theta^j} - \log \sum\_{l=0}^{k-1}e^{x^i\theta^l})
+\\\
+\\\
+L(\Theta) &= \sum\_{i=0}^{m-1}\sum\_{j=0}^{k-1}1 \\{y^i=j\\}(x^i\theta^j - \log \sum\_{l=0}^{k-1}e^{x^i\theta^l})
+\\\
+\end{align}
+
+很明显似然函数最大值对应的 $\Theta$ 就是我们求解的目标，所以问题变为：
+$$
+\max\_\Theta L\_\Theta
+$$
+
+##梯度上升法##
+使用梯度上升法可以帮助我们找到似然函数的最大值，参数 $\Theta\_j$的梯度为：
+
+\begin{align}
+\\\
+\frac{\partial L(\Theta)}{\partial \theta^j} &= \frac{\partial}{\partial \theta^j} ( \sum\_{i=0}^{m-1}\sum\_{j=0}^{k-1}1 \\{y^i=j\\}(x^i\theta^j - \log \sum\_{l=0}^{k-1}e^{x^i\theta^l}) )
+\\\
+\\\
+\frac{\partial L(\Theta)}{\partial \theta^j} &= \sum\_{i=0}^{m-1}\frac{\partial}{\partial \theta^j}(\sum\_{j=0}^{k-1}1 \\{y^i=j\\}(x^i\theta^j - \log \sum\_{l=0}^{k-1}e^{x^i\theta^l}) )
+\\\
+\\\
+\frac{\partial L(\Theta)}{\partial \theta^j} &= \sum\_{i=0}^{m-1}\frac{\partial}{\partial \theta^j}(\sum\_{j=0}^{k-1}1 \\{y^i=j\\}x^i\theta^j - \sum\_{j=0}^{k-1}1 \\{y^i=j\\} \log \sum\_{l=0}^{k-1}e^{x^i\theta^l} )
+\\\
+\\\
+\frac{\partial L(\Theta)}{\partial \theta^j} &= \sum\_{i=0}^{m-1}(1 \\{y^i=j\\}x^i -\frac{\partial}{\partial \theta^j} ( \sum\_{j=0}^{k-1}1 \\{y^i=j\\} \log \sum\_{l=0}^{k-1}e^{x^i\theta^l}) )
+\\\
+\end{align}
