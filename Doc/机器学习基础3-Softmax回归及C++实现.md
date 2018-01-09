@@ -88,7 +88,7 @@ y^{m-1}
 
 \begin{align}
 \\\
-L(\Theta) &= \prod\_{i=0}^{m-1} P(y^i \mid x^i)
+L(\Theta) &= \prod\_{i=0}^{m-1} p(y^i \mid x^i)
 \\\
 \\\
 L(\Theta) &= \prod\_{i=0}^{m-1} \sum\_{j=0}^{k-1}1 \\{y^i=j\\} \frac{e^{x^i\theta^j}}{\sum\_{l=0}^{k-1}e^{x^i\theta^l}}
@@ -127,20 +127,41 @@ $$
 $$
 
 ##梯度上升法##
-使用梯度上升法可以帮助我们找到似然函数的最大值，参数 $\Theta\_j$的梯度为：
+使用梯度上升法可以帮助我们找到似然函数的最大值，参数 $\Theta\^t$的梯度为：
 
 \begin{align}
 \\\
-\frac{\partial L(\Theta)}{\partial \theta^j} &= \frac{\partial}{\partial \theta^j} ( \sum\_{i=0}^{m-1}\sum\_{j=0}^{k-1}1 \\{y^i=j\\}(x^i\theta^j - \log \sum\_{l=0}^{k-1}e^{x^i\theta^l}) )
+\frac{\partial L(\Theta)}{\partial \theta^t} &= \frac{\partial}{\partial \theta^t} ( \sum\_{i=0}^{m-1}\sum\_{j=0}^{k-1}1 \\{y^i=j\\}(x^i\theta^j - \log \sum\_{l=0}^{k-1}e^{x^i\theta^l}) )
 \\\
 \\\
-\frac{\partial L(\Theta)}{\partial \theta^j} &= \sum\_{i=0}^{m-1}\frac{\partial}{\partial \theta^j}(\sum\_{j=0}^{k-1}1 \\{y^i=j\\}(x^i\theta^j - \log \sum\_{l=0}^{k-1}e^{x^i\theta^l}) )
+\frac{\partial L(\Theta)}{\partial \theta^t} &= \sum\_{i=0}^{m-1}\frac{\partial}{\partial \theta^t}(\sum\_{j=0}^{k-1}1 \\{y^i=j\\}(x^i\theta^j - \log \sum\_{l=0}^{k-1}e^{x^i\theta^l}) )
 \\\
 \\\
-\frac{\partial L(\Theta)}{\partial \theta^j} &= \sum\_{i=0}^{m-1}\frac{\partial}{\partial \theta^j}(\sum\_{j=0}^{k-1}1 \\{y^i=j\\}x^i\theta^j - \sum\_{j=0}^{k-1}1 \\{y^i=j\\} \log \sum\_{l=0}^{k-1}e^{x^i\theta^l} )
+\frac{\partial L(\Theta)}{\partial \theta^t} &= \sum\_{i=0}^{m-1}\frac{\partial}{\partial \theta^t}(\sum\_{j=0}^{k-1}1 \\{y^i=j\\}x^i\theta^j - \sum\_{j=0}^{k-1}1 \\{y^i=j\\} \log \sum\_{l=0}^{k-1}e^{x^i\theta^l} )
 \\\
 \\\
-\frac{\partial L(\Theta)}{\partial \theta^j} &= \sum\_{i=0}^{m-1}(1 \\{y^i=j\\}x^i -\frac{\partial}{\partial \theta^j} ( \sum\_{j=0}^{k-1}1 \\{y^i=j\\} \log \sum\_{l=0}^{k-1}e^{x^i\theta^l}) )
+\frac{\partial L(\Theta)}{\partial \theta^t} &= \sum\_{i=0}^{m-1}(1 \\{y^i=t\\}(x^i)^T -\frac{\partial}{\partial \theta^t} ( \sum\_{j=0}^{k-1}1 \\{y^i=j\\} \log \sum\_{l=0}^{k-1}e^{x^i\theta^l}) )
+\\\
+\\\
+\frac{\partial L(\Theta)}{\partial \theta^t} &= \sum\_{i=0}^{m-1}(1 \\{y^i=t\\}(x^i)^T - \sum\_{j=0}^{k-1}1 \\{y^i=j\\} \frac{\partial}{\partial \theta^t} (\log \sum\_{l=0}^{k-1}e^{x^i\theta^l}) )
+\\\
+\\\
+\frac{\partial L(\Theta)}{\partial \theta^t} &= \sum\_{i=0}^{m-1}(1 \\{y^i=t\\}(x^i)^T - \sum\_{j=0}^{k-1}1 \\{y^i=j\\} \frac{1}{\sum\_{l=0}^{k-1}e^{x^i\theta^l}} \frac{\partial}{\partial \theta^t} \sum\_{l=0}^{k-1}e^{x^i\theta^l} )
+\\\
+\\\
+\frac{\partial L(\Theta)}{\partial \theta^t} &= \sum\_{i=0}^{m-1}(1 \\{y^i=t\\}(x^i)^T - \sum\_{j=0}^{k-1}1 \\{y^i=j\\} \frac{1}{\sum\_{l=0}^{k-1}e^{x^i\theta^l}} \frac{\partial}{\partial \theta^t} e^{x^i\theta^t} )
+\\\
+\\\
+\frac{\partial L(\Theta)}{\partial \theta^t} &= \sum\_{i=0}^{m-1}(1 \\{y^i=t\\}(x^i)^T - \sum\_{j=0}^{k-1}1 \\{y^i=j\\} \frac{(x^i)^T e^{x^i\theta^t}}{\sum\_{l=0}^{k-1}e^{x^i\theta^l}})
+\\\
+\\\
+\frac{\partial L(\Theta)}{\partial \theta^t} &= \sum\_{i=0}^{m-1}(1 \\{y^i=t\\}(x^i)^T - \frac{(x^i)^T e^{x^i\theta^t}}{\sum\_{l=0}^{k-1}e^{x^i\theta^l}})
+\\\
+\\\
+\frac{\partial L(\Theta)}{\partial \theta^t} &= \sum\_{i=0}^{m-1}(x^i)^T(1 \\{y^i=t\\} - \frac{e^{x^i\theta^t}}{\sum\_{l=0}^{k-1}e^{x^i\theta^l}})
+\\\
+\\\
+\frac{\partial L(\Theta)}{\partial \theta^t} &= \sum\_{i=0}^{m-1}(x^i)^T(1 \\{y^i=t\\} - p(y=t|x^i;\Theta))
 \\\
 \end{align}
 
