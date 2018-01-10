@@ -165,5 +165,27 @@ $$
 \\\
 \end{align}
 
+梯度上升法下的 $$\theta^t$$ 的更新公式为：
+
+$$
+\theta^t := \theta^t + \alpha \frac{\partial L(\Theta)}{\partial \theta^t}
+$$
+
+##Softmax回归模型参数化的特点##
+Softmax回归有一个不寻常的特点：它有一个“冗余”的参数集。假设我们从参数向量 $\theta^j$ 中减去向量 $\psi$ ，则概率函数变为：
+
+\begin{align}
+\\\
+p(y=j|x;\Theta) &= \frac{e^{x^i(\theta^j-\psi)}}{\sum\_{l=0}^{k-1}e^{x^i(\theta^l-\psi)}}
+\\\
+\\\
+p(y=j|x;\Theta) &= \frac{e^{x^i\theta^j}e^{-x^i\psi}}{\sum\_{l=0}^{k-1}e^{x^i\theta^l}e^{-x^i\psi}}
+\\\
+\\\
+p(y=j|x;\Theta) &= \frac{e^{x^i\theta^j}}{\sum\_{l=0}^{k-1}e^{x^i\theta^l}}
+\\\
+\end{align}
+
+我们看到从参数向量 $\theta^j$ 中减去向量 $\psi$ 并不影响概率函数的结果。也就是说我们可以得到多组参数值。所以可以设 $\psi = \theta^0$ ，这样的话 $\theta^0$ 就是一个零向量。也就是我们把 $\theta^0$设置为零向量后，我们只需要优化其他 $\theta$ 。 
 
 http://m.blog.csdn.net/wangyangzhizhou/article/details/75088106
