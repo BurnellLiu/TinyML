@@ -372,13 +372,10 @@ float LLogisticRegression::LikelihoodValue(IN const LRegressionMatrix& xMatrix, 
 class CSoftmaxRegression
 {
 public:
-    CSoftmaxRegression(IN unsigned int m, IN unsigned int n, IN unsigned int k)
+    CSoftmaxRegression()
     {
-        m_M = m;
-        m_N = n;
-        m_K = k;
-
-        m_wMatrix.Reset(n + 1, k, 0.0f);
+        m_N = 0;
+        m_K = 0;
     }
 
     ~CSoftmaxRegression()
@@ -389,10 +386,16 @@ public:
     /// @brief 训练模型
     bool TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix, IN float alpha)
     {
+        if (m_N == 0)
+        {
+            m_N = xMatrix.ColumnLen;
+            m_K = yMatrix.ColumnLen;
+            m_wMatrix.Reset(m_N + 1, m_K, 0.0f);
+        }
+        
         // 检查参数
-        if (m_M < 2 || m_N < 1 || m_K < 2)
+        if (m_N < 1 || m_K < 2)
             return false;
-
         if (xMatrix.RowLen < 1)
             return false;
         if (xMatrix.ColumnLen != m_N)
@@ -422,7 +425,9 @@ public:
 
         // 权重向量(列向量)
         LRegressionMatrix dwVec(m_N + 1, 1, 0.0f);
-        for (unsigned int k = 0; k < m_K; k++)
+
+        // 第一个权重值不优化, 解决Softmax回归参数有冗余的问题
+        for (unsigned int k = 1; k < m_K; k++)
         {
             dwVec.Reset(m_N + 1, 1, 0.0f);
             for (unsigned int row = 0; row < X.RowLen; row++)
@@ -432,8 +437,6 @@ public:
                     dwVec[col][0] += X[row][col] * P[row][k];
                 }
             }
-
-            LRegressionMatrix::SCALARDIV(dwVec, (float)m_M, dwVec);
 
             LRegressionMatrix::SCALARMUL(dwVec, alpha, dwVec);
 
@@ -450,7 +453,7 @@ public:
     bool Predict(IN const LRegressionMatrix& xMatrix, OUT LRegressionMatrix& yMatrix) const
     {
         // 检查参数
-        if (m_M < 2 || m_N < 1 || m_K < 2)
+        if (m_N < 1 || m_K < 2)
             return false;
 
         if (xMatrix.RowLen < 1)
@@ -468,12 +471,47 @@ public:
         return true;
     }
 
+    /// @brief 计算似然值, 似然值为0.0~1.0之间的数, 似然值值越大模型越好
+    float LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix) const
+    {
+        // 检查参数
+        // 特征值小于1说明模型还没有训练
+        if (m_N < 1)
+            return -1.0f;
+        if (xMatrix.RowLen < 1)
+            return -1.0f;
+        if (xMatrix.RowLen != yMatrix.RowLen)
+            return -1.0f;
+        if (xMatrix.ColumnLen != m_N)
+            return -1.0f;
+        if (yMatrix.ColumnLen != m_K)
+            return -1.0f;
+
+        LRegressionMatrix predictY;
+        this->Predict(xMatrix, predictY);
+
+        float likelihood = 1.0f;
+        for (unsigned int i = 0; i < yMatrix.RowLen; i++)
+        {
+            for (unsigned int j = 0; j < yMatrix.ColumnLen; j++)
+            {
+                if (yMatrix[i][j] == REGRESSION_ONE)
+                {
+                    likelihood *= predictY[i][j];
+                    break;
+                }  
+            }
+            
+        }
+
+        return likelihood;
+    }
+
 private:
     /// @brief 计算样本属于K个分类的各个概率
     /// @param[in] sampleMatrix 样本矩阵, m * n
     /// @param[in] weightMatrix 权重矩阵, n * k, 每一列为一个分类权重
     /// @param[out] probMatrix 概率矩阵, 存储每个样本属于不同分类的概率
-    /// @return 成功返回true, 失败返回false(参数错误的情况下会返回失败)
     void SampleProbK(
         IN const LRegressionMatrix& sampleMatrix, 
         IN const LRegressionMatrix& weightMatrix, 
@@ -503,18 +541,18 @@ private:
             }
         }
     }
+
 private:
-    unsigned int m_M; ///< 样本总个数
     unsigned int m_N; ///< 样本特征值个数
     unsigned int m_K; ///< 样本类别个数
 
     LRegressionMatrix m_wMatrix; ///<权重矩阵, 每一列则为一个分类的权重向量
 };
 
-LSoftmaxRegression::LSoftmaxRegression(IN unsigned int m, IN unsigned int n, IN unsigned int k)
+LSoftmaxRegression::LSoftmaxRegression()
     :m_pSoftmaxRegression(0)
 {
-    m_pSoftmaxRegression = new CSoftmaxRegression(m, n ,k);
+    m_pSoftmaxRegression = new CSoftmaxRegression();
 }
 
 LSoftmaxRegression::~LSoftmaxRegression()
@@ -535,4 +573,9 @@ bool LSoftmaxRegression::TrainModel(IN const LRegressionMatrix& xMatrix, IN cons
 bool LSoftmaxRegression::Predict(IN const LRegressionMatrix& xMatrix, OUT LRegressionMatrix& yMatrix) const
 {
     return m_pSoftmaxRegression->Predict(xMatrix, yMatrix);
+}
+
+float LSoftmaxRegression::LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix) const
+{
+    return m_pSoftmaxRegression->LikelihoodValue(xMatrix, yMatrix);
 }
