@@ -5,6 +5,8 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Regression", "Regression\Regression.vcxproj", "{49958A39-31B8-45B5-9112-BD136DACB4ED}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DecisionTree", "DecisionTree\DecisionTree.vcxproj", "{C6D1064C-F453-4D88-8BAA-121217399CB8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -21,6 +23,14 @@ Global
 		{49958A39-31B8-45B5-9112-BD136DACB4ED}.Release|Win32.Build.0 = Release|Win32
 		{49958A39-31B8-45B5-9112-BD136DACB4ED}.Release|x64.ActiveCfg = Release|x64
 		{49958A39-31B8-45B5-9112-BD136DACB4ED}.Release|x64.Build.0 = Release|x64
+		{C6D1064C-F453-4D88-8BAA-121217399CB8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C6D1064C-F453-4D88-8BAA-121217399CB8}.Debug|Win32.Build.0 = Debug|Win32
+		{C6D1064C-F453-4D88-8BAA-121217399CB8}.Debug|x64.ActiveCfg = Debug|x64
+		{C6D1064C-F453-4D88-8BAA-121217399CB8}.Debug|x64.Build.0 = Debug|x64
+		{C6D1064C-F453-4D88-8BAA-121217399CB8}.Release|Win32.ActiveCfg = Release|Win32
+		{C6D1064C-F453-4D88-8BAA-121217399CB8}.Release|Win32.Build.0 = Release|Win32
+		{C6D1064C-F453-4D88-8BAA-121217399CB8}.Release|x64.ActiveCfg = Release|x64
+		{C6D1064C-F453-4D88-8BAA-121217399CB8}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
