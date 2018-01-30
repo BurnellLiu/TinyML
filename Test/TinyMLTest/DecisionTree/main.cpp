@@ -1,89 +1,61 @@
+
 #include "../../../Src/LDecisionTree.h"
+#include "../../../Src/CSVIo.h"
 
 #include <cstdio>
 #include <windows.h>
 
+/// @brief 打印矩阵
+void PrintMatrix(IN const LDataMatrix& dataMatrix)
+{
+    printf("Matrix Row: %u  Col: %u\n", dataMatrix.RowLen, dataMatrix.ColumnLen);
+    for (unsigned int i = 0; i < dataMatrix.RowLen; i++)
+    {
+        for (unsigned int j = 0; j < dataMatrix.ColumnLen; j++)
+        {
+            printf("%.2f  ", dataMatrix[i][j]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
 int main()
 {
-    /*
-    "slashdot"    1.0
-    "google"      2.0
-    "digg"        3.0
-    "kiwitobes"   4.0
-    "(direct)"    5.0
+    // 加载数据集
+    LCSVParser csvParser(L"../../../DataSet/iris.csv");
+    csvParser.SetSkipHeader(true);
+    LDataMatrix dataMatrix;
+    csvParser.LoadAllData(dataMatrix);
 
-    "USA"         1.0
-    "France"      2.0
-    "UK"          3.0
-    "New Zealand" 4.0
+    unsigned int rowLen = dataMatrix.RowLen;
+    unsigned int colLen = dataMatrix.ColumnLen;
 
-    "yes"         1.0
-    "no"          2.0
-    */
-    double trainX[64] = 
+    // 将数据集拆分为样本集合标签集
+    LDTCMatrix xMatrix;
+    LDTCMatrix yVector;
+    dataMatrix.SubMatrix(0, rowLen, 0, colLen - 1, xMatrix);
+    dataMatrix.SubMatrix(0, rowLen, colLen - 1, 1, yVector);
+
+    // 定义特征值分布向量
+    double featureN[4] = 
     {
-        1.0, 1.0, 1.0, 18.0,
-        2.0, 2.0, 1.0, 23.0,
-        3.0, 1.0, 1.0, 24.0,
-        4.0, 2.0, 1.0, 23.0,
-        2.0, 3.0, 2.0, 21.0,
-        5.0, 4.0, 2.0, 12.0,
-        5.0, 3.0, 2.0, 21.0,
-        2.0, 1.0, 2.0, 24.0,
-        1.0, 2.0, 1.0, 19.0,
-        3.0, 1.0, 2.0, 18.0,
-        2.0, 3.0, 2.0, 18.0,
-        4.0, 3.0, 2.0, 19.0,
-        3.0, 4.0, 1.0, 12.0,
-        1.0, 3.0, 2.0, 21.0,
-        2.0, 3.0, 1.0, 18.0,
-        4.0, 2.0, 1.0, 19.0
+        DTC_FEATURE_CONTINUUM, 
+        DTC_FEATURE_CONTINUUM, 
+        DTC_FEATURE_CONTINUUM, 
+        DTC_FEATURE_CONTINUUM
     };
-
-    double trainN[4] = {DTC_FEATURE_DISCRETE, DTC_FEATURE_DISCRETE, DTC_FEATURE_DISCRETE, DTC_FEATURE_CONTINUUM};
-
-    /*
-    "None"       1.0
-    "Premium"    2.0
-    "Basic"      3.0
-    */
-    double trainY[16] =
-    {
-        1.0,
-        2.0,
-        3.0,
-        3.0,
-        2.0,
-        1.0,
-        3.0,
-        2.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        3.0,
-        1.0,
-        3.0,
-        3.0
-    };
-    LDTCMatrix xTrainMatrix(16, 4, trainX);
-    LDTCMatrix nVector(1, 4, trainN);
-    LDTCMatrix yTrainVector(16, 1, trainY);
+    LDTCMatrix nVector(1, 4, featureN);
 
     LDecisionTreeClassifier clf;
-    clf.TrainModel(xTrainMatrix, nVector, yTrainVector);
-    clf.Prune(1.0);
-    clf.PrintTree();
+    clf.TrainModel(xMatrix, nVector, yVector);
+    //clf.PrintTree();
 
-    double testX[4] = {5.0, 1.0, 1.0, 5};
-    LDTCMatrix xTestMatrix(1, 4, testX);
-    LDTCMatrix yTestVector;
+    double score = clf.Score(xMatrix, yVector);
 
-    clf.Predict(xTestMatrix, yTestVector);
+    //printf("Model Score: %.2f\n", score);
 
-    printf("%f\n", yTestVector[0][0]);
-
-    system("pause");
+    //system("pause");
 
     return 0;
 }

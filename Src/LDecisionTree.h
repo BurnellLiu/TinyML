@@ -43,17 +43,23 @@ public:
     /// @return 成功返回true, 失败返回false(参数错误的情况下会返回失败)
     bool TrainModel(IN const LDTCMatrix& xMatrix, IN const LDTCMatrix& nVector, IN const LDTCMatrix& yVector);
 
+    /// @brief 进行剪枝操作(即合并叶子节点)
+    /// 剪枝可以防止模型过拟合
+    /// 如果两个叶子节点合并后增加的熵小于指定的最小值, 则进行合并操作
+    /// @param[in] minGain 最小增加值
+    void Prune(IN double minGain);
+
     /// @brief 使用训练好的模型预测数据
     /// @param[in] xMatrix 需要预测的样本矩阵
     /// @param[out] yVector 存储预测的标签向量(列向量)
     /// @return 成功返回true, 失败返回false(模型未训练或参数错误的情况下会返回失败)
     bool Predict(IN const LDTCMatrix& xMatrix, OUT LDTCMatrix& yVector) const;
 
-    /// @brief 进行剪枝操作(即合并叶子节点)
-    /// 剪枝可以防止模型过拟合
-    /// 如果两个叶子节点合并后增加的熵小于指定的最小值, 则进行合并操作
-    /// @param[in] minGain 最小增加值
-    void Prune(IN double minGain);
+    /// @brief 计算模型得分
+    /// @param[in] xMatrix 样本矩阵
+    /// @param[in] yVector 标签向量(列向量)
+    /// @return 得分 值为0.0~1.0, 模型未训练或者参数有误返回-1.0
+    double Score(IN const LDTCMatrix& xMatrix, IN const LDTCMatrix& yVector) const;
 
     /// @brief 打印树, 用于调试
     void PrintTree();

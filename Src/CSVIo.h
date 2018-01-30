@@ -17,7 +17,7 @@ typedef LMatrix<double> LDataMatrix;     ///< 数据矩阵
 class CCSVParser;
 
 /// @brief CSV文件解析器
-/// 本解析器之支持解析数值数据, 并且不能有缺失数据
+/// 本解析器只支持解析数值数据, 并且不能有缺失数据
 class LCSVParser
 {
 public:

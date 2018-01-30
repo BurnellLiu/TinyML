@@ -135,6 +135,18 @@ public:
 
     }
 
+    /// @brief 进行剪枝操作(即合并叶子节点)
+    void Prune(IN double minGain)
+    {
+        if (nullptr == m_pRootNode)
+            return;
+        if (minGain < 0.0)
+            return;
+
+        this->RecursionPrune(m_pRootNode, minGain);
+
+    }
+
     /// @brief 使用训练好的模型预测数据
     bool Predict(IN const LDTCMatrix& xMatrix, OUT LDTCMatrix& yVector) const
     {
@@ -157,16 +169,34 @@ public:
         
     }
 
-    /// @brief 进行剪枝操作(即合并叶子节点)
-    void Prune(IN double minGain)
+    /// @brief 计算模型得分
+    double Score(IN const LDTCMatrix& xMatrix, IN const LDTCMatrix& yVector) const
     {
+        // 检查参数
         if (nullptr == m_pRootNode)
-            return;
-        if (minGain < 0.0)
-            return;
+            return -1.0;
+        if (xMatrix.RowLen < 1)
+            return -1.0;
+        if (xMatrix.ColumnLen != m_featureNum)
+            return -1.0;
+        if (yVector.ColumnLen != 1)
+            return -1.0;
+        if (yVector.RowLen != xMatrix.RowLen)
+            return -1.0;
 
-        this->RecursionPrune(m_pRootNode, minGain);
+        LDTCMatrix predictVector;
+        this->Predict(xMatrix, predictVector);
+        if (predictVector.RowLen != yVector.RowLen)
+            return -1.0;
 
+        double trueCount = 0.0;
+        for (unsigned int row = 0; row < yVector.RowLen; row++)
+        {
+            if (predictVector[row][0] == yVector[row][0])
+                trueCount += 1.0;
+        }
+
+        return trueCount / (double)yVector.RowLen;
     }
 
     /// @brief 打印树, 用于调试
@@ -529,15 +559,22 @@ bool LDecisionTreeClassifier::TrainModel(IN const LDTCMatrix& xMatrix, IN const 
     return m_pClassifier->TrainModel(xMatrix, nVector, yVector);
 }
 
+void LDecisionTreeClassifier::Prune(IN double minGain)
+{
+    m_pClassifier->Prune(minGain);
+}
+
 bool LDecisionTreeClassifier::Predict(IN const LDTCMatrix& xMatrix, OUT LDTCMatrix& yVector) const
 {
     return m_pClassifier->Predict(xMatrix, yVector);
 }
 
-void LDecisionTreeClassifier::Prune(IN double minGain)
+double LDecisionTreeClassifier::Score(IN const LDTCMatrix& xMatrix, IN const LDTCMatrix& yVector) const
 {
-    m_pClassifier->Prune(minGain);
+    return m_pClassifier->Score(xMatrix, yVector);
 }
+
+
 
 void LDecisionTreeClassifier::PrintTree()
 {
