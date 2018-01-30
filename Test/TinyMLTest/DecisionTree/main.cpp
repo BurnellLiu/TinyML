@@ -40,7 +40,7 @@ int main()
         4.0, 2.0, 1.0, 19.0
     };
 
-    double trainN[4] = {FEATURE_DISCRETE, FEATURE_DISCRETE, FEATURE_DISCRETE, FEATURE_CONTINUUM};
+    double trainN[4] = {DTC_FEATURE_DISCRETE, DTC_FEATURE_DISCRETE, DTC_FEATURE_DISCRETE, DTC_FEATURE_CONTINUUM};
 
     /*
     "None"       1.0
@@ -66,14 +66,22 @@ int main()
         3.0,
         3.0
     };
-    LDTCMatrix xMatrix(16, 4, trainX);
+    LDTCMatrix xTrainMatrix(16, 4, trainX);
     LDTCMatrix nVector(1, 4, trainN);
-    LDTCMatrix yVector(16, 1, trainY);
+    LDTCMatrix yTrainVector(16, 1, trainY);
 
     LDecisionTreeClassifier clf;
-    clf.TrainModel(xMatrix, nVector, yVector);
-
+    clf.TrainModel(xTrainMatrix, nVector, yTrainVector);
+    clf.Prune(1.0);
     clf.PrintTree();
+
+    double testX[4] = {5.0, 1.0, 1.0, 5};
+    LDTCMatrix xTestMatrix(1, 4, testX);
+    LDTCMatrix yTestVector;
+
+    clf.Predict(xTestMatrix, yTestVector);
+
+    printf("%f\n", yTestVector[0][0]);
 
     system("pause");
 
