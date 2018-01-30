@@ -110,10 +110,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\Src\CSVIo.cpp" />
     <ClCompile Include="..\..\..\Src\LDecisionTree.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\Src\CSVIo.h" />
     <ClInclude Include="..\..\..\Src\LDecisionTree.h" />
     <ClInclude Include="..\..\..\Src\LMatrix.h" />
   </ItemGroup>
