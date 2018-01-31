@@ -1,5 +1,4 @@
-
-#include "CSVIo.h"
+ï»¿#include "LCSVIo.h"
 
 #include <iostream>
 #include <fstream>
@@ -13,10 +12,10 @@ using std::wifstream;
 using std::wstringstream;
 using std::vector;
 
-/// @brief ×Ö·û´®·Ö¸î
-/// @param[in] ch ·Ö¸î×Ö·û
-/// @param[in] srcStr Ô´×Ö·û´®
-/// @param[in] strList ·Ö¸îºóµÄ×Ö·û´®ÁĞ±í
+/// @brief å­—ç¬¦ä¸²åˆ†å‰²
+/// @param[in] ch åˆ†å‰²å­—ç¬¦
+/// @param[in] srcStr æºå­—ç¬¦ä¸²
+/// @param[in] strList åˆ†å‰²åçš„å­—ç¬¦ä¸²åˆ—è¡¨
 static void WStringSplit(IN const wchar_t ch, IN const wstring& srcStr, OUT vector<wstring>& strList)
 {
     strList.clear();
@@ -43,8 +42,8 @@ static void WStringSplit(IN const wchar_t ch, IN const wstring& srcStr, OUT vect
 }
 
 /// <SUMMARY>
-/// ×Ö·û´®²Ã¼ô
-/// È¥³ı×Ö·û´®¿ªÊ¼ºÍ½áÊøµÄ¿Õ°××Ö·û, Èç: ¿Õ¸ñ, »»ĞĞ, »Ø³µ, ÖÆ±í·û
+/// å­—ç¬¦ä¸²è£å‰ª
+/// å»é™¤å­—ç¬¦ä¸²å¼€å§‹å’Œç»“æŸçš„ç©ºç™½å­—ç¬¦, å¦‚: ç©ºæ ¼, æ¢è¡Œ, å›è½¦, åˆ¶è¡¨ç¬¦
 /// </SUMMARY>
 static void WStringTrimmed(INOUT wstring& str)
 {
@@ -79,7 +78,7 @@ static void WStringTrimmed(INOUT wstring& str)
 }
 
 /// <SUMMARY>
-/// ×Ö·û´®×ª»»Îª¸¡µãÊı
+/// å­—ç¬¦ä¸²è½¬æ¢ä¸ºæµ®ç‚¹æ•°
 /// </SUMMARY>
 static double StringToDouble(IN const wstring& str)
 {
@@ -91,58 +90,58 @@ static double StringToDouble(IN const wstring& str)
 
 
 
-/// @brief CSVÎÄ¼ş½âÎöÆ÷
+/// @brief CSVæ–‡ä»¶è§£æå™¨
 class CCSVParser
 {
 public:
-    /// @brief ¹¹Ôìº¯Êı
+    /// @brief æ„é€ å‡½æ•°
     explicit CCSVParser(IN const wchar_t* fileName)
     {
         m_fileName = fileName;
         m_bSkipHeader = false;
     }
 
-    /// @brief Îö¹¹º¯Êı
+    /// @brief ææ„å‡½æ•°
     ~CCSVParser()
     {
 
     }
 
-    /// @brief ÉèÖÃÊÇ·ñÌø¹ıÊ×ĞĞ
+    /// @brief è®¾ç½®æ˜¯å¦è·³è¿‡é¦–è¡Œ
     void SetSkipHeader(IN bool skip)
     {
         m_bSkipHeader = skip;
     }
 
-    /// @brief ¼ÓÔØËùÓĞÊı¾İ
+    /// @brief åŠ è½½æ‰€æœ‰æ•°æ®
     bool LoadAllData(OUT LDataMatrix& dataMatrix)
     {
         wstring str;
         wifstream fin(m_fileName, ios::in);
 
-        // ÎÄ¼ş²»´æÔÚ
+        // æ–‡ä»¶ä¸å­˜åœ¨
         if (!fin) 
         {
             return false;
         }
 
-        // ¼ì²éÊÇ·ñĞèÒªÌø¹ıÊ×ĞĞ
+        // æ£€æŸ¥æ˜¯å¦éœ€è¦è·³è¿‡é¦–è¡Œ
         if (m_bSkipHeader)
             getline(fin, str);
 
         vector<vector<wstring>> strMatrix;
         while (getline(fin, str))
         {
-            // È¥³ı¿ªÍ·ºÍ½áÎ²µÄ¿Õ°××Ö·û
+            // å»é™¤å¼€å¤´å’Œç»“å°¾çš„ç©ºç™½å­—ç¬¦
             WStringTrimmed(str);
             if (str.empty())
                 continue;
 
-            // ·Ö¸î×Ö·û´®
+            // åˆ†å‰²å­—ç¬¦ä¸²
             vector<wstring> strList;
             WStringSplit(L',', str, strList);
 
-            // ¼ì²éÃ¿¸ö×Ö·û´®ÊÇ·ñÎª¿Õ
+            // æ£€æŸ¥æ¯ä¸ªå­—ç¬¦ä¸²æ˜¯å¦ä¸ºç©º
             for (auto iter = strList.begin(); iter != strList.end(); iter++)
             {
                 WStringTrimmed(*iter);
@@ -153,12 +152,12 @@ public:
             strMatrix.push_back(strList);
         }
 
-        // ĞĞ³¤¶È
+        // è¡Œé•¿åº¦
         size_t rowLength = strMatrix.size();
         if (rowLength < 1)
             return false;
         
-        // ÁĞ³¤¶È
+        // åˆ—é•¿åº¦
         size_t colLength = strMatrix[0].size();
         if (colLength < 1)
             return false;
@@ -167,7 +166,7 @@ public:
 
         for (size_t row = 0; row < rowLength; row++)
         {
-            // ¼ì²éÃ¿Ò»ĞĞÖĞµÄÊı¾İ³¤¶ÈÊÇ·ñÒ»ÖÂ
+            // æ£€æŸ¥æ¯ä¸€è¡Œä¸­çš„æ•°æ®é•¿åº¦æ˜¯å¦ä¸€è‡´
             if (strMatrix[row].size() != colLength)
             {
                 dataMatrix.Reset(0, 0);
@@ -184,8 +183,8 @@ public:
     }
 
 private:
-    bool m_bSkipHeader; ///< Ìø¹ıÊ×ĞĞ
-    wstring m_fileName; ///< ÎÄ¼şÃû
+    bool m_bSkipHeader; ///< è·³è¿‡é¦–è¡Œ
+    wstring m_fileName; ///< æ–‡ä»¶å
 
 };
 

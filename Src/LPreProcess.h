@@ -14,6 +14,8 @@
 typedef LMatrix<double> LDoubleMatrix;     ///< 浮点数矩阵
 typedef LMatrix<unsigned int> LUIntMatrix; ///< 无符号整数矩阵
 
+
+
 class CMinMaxScaler;
 
 /// @brief 最小最大缩放器
@@ -41,6 +43,12 @@ private:
     CMinMaxScaler* m_pScaler; ///< 缩放器实现对象
 
 };
+
+
+/// @brief 对矩阵进行洗牌(随机打乱各个行)
+/// @param[in] seed 随机数种子
+/// @param[inout] dataMatrix 需要洗牌的矩阵
+void DoubleMatrixShuffle(IN unsigned int seed, INOUT LDoubleMatrix& dataMatrix);
 
 
 #endif

@@ -1,6 +1,7 @@
 ﻿
 #include "LPreProcess.h"
 
+#include <cstdlib>
 #include <vector>
 using std::vector;
 
@@ -161,4 +162,38 @@ bool LMinMaxScaler::FitTransform(IN const LUIntMatrix colVec, INOUT LDoubleMatri
 bool LMinMaxScaler::Transform(INOUT LDoubleMatrix& matrix)
 {
     return m_pScaler->Transform(matrix);
+}
+
+/// @brief 产生随机整数
+/// @param[in] min 随机整数的最小值(包含该值)
+/// @param[in] max 随机整数的最大值(包含该值)
+/// @return 随机整数
+static int RandInt(int min, int max)
+{
+    if (min > max)
+    {
+        int t = max; max = min; min = t;
+    }
+
+    return rand() % (max - min + 1) + min;
+}
+
+void DoubleMatrixShuffle(IN unsigned int seed, INOUT LDoubleMatrix& dataMatrix)
+{
+    // 设置随机种子
+    srand(seed);
+
+    /// 每次从未处理的数据中随机取出一个数字，然后把该数字放在数组的尾部，即数组尾部存放的是已经处理过的数字
+    for (int i = 0; i < (int)dataMatrix.RowLen; i++)
+    {
+        int k = RandInt(0, i);
+
+        for (int j = 0; j < (int)dataMatrix.ColumnLen; j++)
+        {
+            double t = dataMatrix[k][j];
+            dataMatrix[k][j] = dataMatrix[i][j];
+            dataMatrix[i][j] = t;
+        }
+
+    }
 }

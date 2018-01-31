@@ -21,7 +21,10 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Src\CSVIo.cpp">
+    <ClCompile Include="..\..\..\Src\LCSVIo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Src\LPreProcess.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -32,7 +35,10 @@
     <ClInclude Include="..\..\..\Src\LMatrix.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Src\CSVIo.h">
+    <ClInclude Include="..\..\..\Src\LCSVIo.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Src\LPreProcess.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

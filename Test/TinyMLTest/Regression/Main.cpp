@@ -1,180 +1,108 @@
 ﻿
 
 #include "../../../Src/LRegression.h"
+#include "../../../Src/LCSVIo.h"
+#include "../../../Src/LPreProcess.h"
 
 #include <cstdio>
 #include <cstdlib>
 
-void TestLinearRegression()
+/// @brief 打印矩阵
+void MatrixPrint(IN const LDataMatrix& dataMatrix)
 {
-    // 定义训练样本
-    float trainX[4] =
+    printf("Matrix Row: %u  Col: %u\n", dataMatrix.RowLen, dataMatrix.ColumnLen);
+    for (unsigned int i = 0; i < dataMatrix.RowLen; i++)
     {
-        2.0f,
-        4.0f,
-        6.0f,
-        8.0f
-    };
-    LRegressionMatrix xMatrix(4, 1, trainX);
-
-    // 定义训练样本输出
-    float trainY[4] =
-    {
-        1.0f,
-        2.0f,
-        3.0f,
-        4.0f
-    };
-    LRegressionMatrix yMatrix(4, 1, trainY);
-
-
-    // 定义线性回归对象
-    LLinearRegression linearReg;
-
-    // 训练模型
-    // 计算每一次训练后的损失值
-    for (unsigned int i = 0; i < 10; i++)
-    {
-        linearReg.TrainModel(xMatrix, yMatrix, 0.01f);
-        float loss = linearReg.LossValue(xMatrix, yMatrix);
-        printf("Train Time: %u  ", i);
-        printf("Loss Value: %f\n", loss);
-    }
-
-    // 进行预测
-    LRegressionMatrix yVector;
-    linearReg.Predict(xMatrix, yVector);
-
-    printf("Predict Value: ");
-    for (unsigned int i = 0; i < yVector.RowLen; i++)
-    {
-        printf("%.5f  ", yVector[i][0]);
-    }
-    printf("\n");
-}
-
-void TestLogisticRegression()
-{
-    // 训练样本数据
-    float trainSample[36] =
-    {
-        1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-        1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-        1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f
-    };
-    LRegressionMatrix X(6, 6, trainSample);
-
-    // 训练样本标签数据
-    float trainLabel[12] =
-    {
-        1.0f,
-        1.0f,
-        1.0f,
-        0.0f,
-        0.0f,
-        0.0f
-    };
-    LRegressionMatrix Y(6, 1, trainLabel);
-
-    // 定义逻辑回归
-    LLogisticRegression logisticReg;
-
-    // 训练100次
-    // 计算每一次训练后的似然值
-    for (unsigned int i = 0; i < 100; i++)
-    {
-        logisticReg.TrainModel(X, Y, 0.6f);
-        float likelihood = logisticReg.LikelihoodValue(X, Y);
-        printf("Train Time: %u  ", i);
-        printf("Likelihood Value: %f\n", likelihood);
-    }
-
-    // 测试样本
-    float testSample[12] =
-    {
-        1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f
-    };
-    LRegressionMatrix testX(2, 6, testSample);
-
-    // 对测试样本进行预测
-    LRegressionMatrix testY;
-    logisticReg.Predict(testX, testY);
-    printf("Predict Value: ");
-    for (unsigned int i = 0; i < testY.RowLen; i++)
-    {
-        printf("%.5f  ", testY[i][0]);
-    }
-    printf("\n");
-}
-
-void TestSoftmaxRegression()
-{
-    // 训练样本数据
-    float trainSample[36] =
-    {
-        1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-        1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-        1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f
-    };
-    LRegressionMatrix X(6, 6, trainSample);
-
-    // 训练样本标签数据
-    float trainLabel[12] =
-    {
-        1.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 0.0f,
-        0.0f, 1.0f,
-        0.0f, 1.0f,
-        0.0f, 1.0f
-    };
-    LRegressionMatrix Y(6, 2, trainLabel);
-
-    // 定义Softmax回归
-    LSoftmaxRegression softmaxReg;
-
-    // 训练500次
-    for (unsigned int i = 0; i < 500; i++)
-    {
-        softmaxReg.TrainModel(X, Y, 0.1f);
-        float likelihood = softmaxReg.LikelihoodValue(X, Y);
-        printf("Train Time: %u  ", i);
-        printf("Likelihood Value: %f\n", likelihood);
-    }
-
-    // 测试样本
-    float testSample[12] =
-    {
-        1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f
-    };
-    LRegressionMatrix testX(2, 6, testSample);
-
-    // 对测试样本进行预测
-    LRegressionMatrix testY;
-    softmaxReg.Predict(testX, testY);
-    printf("Predict Value: \n");
-    for (unsigned int i = 0; i < testY.RowLen; i++)
-    {
-        for (unsigned int j = 0; j < testY.ColumnLen; j++)
+        for (unsigned int j = 0; j < dataMatrix.ColumnLen; j++)
         {
-            printf("%.5f  ", testY[i][j]);
+            printf("%.2f  ", dataMatrix[i][j]);
         }
         printf("\n");
     }
     printf("\n");
 }
 
+void TestLinearRegression()
+{
+
+}
+
+void TestLogisticRegression()
+{
+ 
+}
+
+/// @brief 测试SoftMax回归
+void TestSoftmaxRegression()
+{
+    // 加载数据集
+    LCSVParser csvParser(L"../../../DataSet/iris.csv");
+    csvParser.SetSkipHeader(true);
+    LDataMatrix dataMatrix;
+    csvParser.LoadAllData(dataMatrix);
+
+    // 数据进行缩放
+    LUIntMatrix colVec(1, 4);
+    colVec[0][0] = 0;
+    colVec[0][1] = 1;
+    colVec[0][2] = 2;
+    colVec[0][3] = 3;
+    LMinMaxScaler scaler(0.0, 1.0);
+    scaler.FitTransform(colVec, dataMatrix);
+
+    // 打乱数据集
+    DoubleMatrixShuffle(0, dataMatrix);
+
+    // 将数据集拆分为训练集和测试集, 测试集占总集合的20%
+    unsigned int testSize = (unsigned int)(dataMatrix.RowLen * 0.2);
+    LDataMatrix trainData;
+    LDataMatrix testData;
+    dataMatrix.SubMatrix(0, testSize, 0, dataMatrix.ColumnLen, testData);
+    dataMatrix.SubMatrix(testSize, dataMatrix.RowLen - testSize, 0, dataMatrix.ColumnLen, trainData);
+
+    // 将训练集拆分为训练样本集合和标签集
+    LRegressionMatrix trainXMatrix;
+    LRegressionMatrix trainYVector;
+    trainData.SubMatrix(0, trainData.RowLen, 0, trainData.ColumnLen - 1, trainXMatrix);
+    trainData.SubMatrix(0, trainData.RowLen, trainData.ColumnLen - 1, 1, trainYVector);
+    // 将训练标签集因子化
+    LRegressionMatrix trainYMatrix(trainYVector.RowLen, 3, REGRESSION_ZERO);
+    for (unsigned int i = 0; i < trainYVector.RowLen; i++)
+    {
+        unsigned int label = (int)trainYVector[i][0];
+        trainYMatrix[i][label] = REGRESSION_ONE;
+    }
+
+    // 将测试集拆分为测试样本集合和标签集
+    LRegressionMatrix testXMatrix;
+    LRegressionMatrix testYVector;
+    testData.SubMatrix(0, testData.RowLen, 0, testData.ColumnLen - 1, testXMatrix);
+    testData.SubMatrix(0, testData.RowLen, testData.ColumnLen - 1, 1, testYVector);
+    // 将测试标签集因子化
+    LRegressionMatrix testYMatrix(testYVector.RowLen, 3, REGRESSION_ZERO);
+    for (unsigned int i = 0; i < testYVector.RowLen; i++)
+    {
+        unsigned int label = (int)testYVector[i][0];
+        testYMatrix[i][label] = REGRESSION_ONE;
+    }
+
+    // 使用训练集训练模型
+    LSoftmaxRegression clf;
+    for (int i = 0; i < 150; i++)
+    {
+        clf.TrainModel(trainXMatrix, trainYMatrix, 0.1);
+    }
+
+    // 计算模型得分
+    double score = clf.Score(testXMatrix, testYMatrix);
+    printf("Softmax Regression Model Score: %.2f\n", score);
+
+}
+
 int main()
 {
-    
+    // TestLinearRegression();
+    // TestLogisticRegression();
     TestSoftmaxRegression();
 
     system("pause");

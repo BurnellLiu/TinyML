@@ -109,12 +109,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\Src\LCSVIo.cpp" />
     <ClCompile Include="..\..\..\Src\LRegression.cpp" />
+    <ClCompile Include="..\..\..\Src\LPreProcess.cpp" />
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\Src\LCSVIo.h" />
     <ClInclude Include="..\..\..\Src\LMatrix.h" />
     <ClInclude Include="..\..\..\Src\LRegression.h" />
+    <ClInclude Include="..\..\..\Src\LPreProcess.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

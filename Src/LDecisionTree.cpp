@@ -202,7 +202,9 @@ public:
     /// @brief 打印树, 用于调试
     void PrintTree()
     {
+        printf("DecisionTreeClassifier: \n");
         this->RecursionPrintTree(m_pRootNode, "  ");
+        printf("\n");
     }
 
 private:
@@ -217,14 +219,13 @@ private:
             printf("{");
             for (auto iter = pNode->LabelMap.begin(); iter != pNode->LabelMap.end(); iter++)
             {
-                printf(" %f : %d;", iter->first, iter->second);
+                printf(" %.2f : %d;", iter->first, iter->second);
             }
             printf("}\n"); 
             return;
         }
 
-
-        printf(" %d : %f ?\n", pNode->CheckColumn, pNode->CheckValue);
+        printf(" %d : %.2f ?\n", pNode->CheckColumn, pNode->CheckValue);
 
         printf("%sTrue->  ", space.c_str());
         this->RecursionPrintTree(pNode->PTrueChildren, space + "  ");

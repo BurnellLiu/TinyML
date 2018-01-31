@@ -111,20 +111,20 @@ public:
     }
 
     /// @brief 计算损失值
-    float LossValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
+    double LossValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
     {
         // 检查参数
         // 特征值小于1说明模型还没有训练
         if (m_N < 1)
-            return -1.0f;
+            return -1.0;
         if (xMatrix.RowLen < 1)
-            return -1.0f;
+            return -1.0;
         if (xMatrix.RowLen != yVector.RowLen)
-            return -1.0f;
+            return -1.0;
         if (xMatrix.ColumnLen != m_N)
-            return -1.0f;
+            return -1.0;
         if (yVector.ColumnLen != 1)
-            return -1.0f;
+            return -1.0;
 
         LRegressionMatrix X;
         LRegressionMatrix Y;
@@ -138,7 +138,7 @@ public:
         LRegressionMatrix LOSS;
         LRegressionMatrix::MUL(YT, Y, LOSS);
 
-        return LOSS[0][0]/2.0f;
+        return LOSS[0][0]/2.0;
     }
 
 private:
@@ -171,7 +171,7 @@ bool LLinearRegression::Predict(IN const LRegressionMatrix& xMatrix, OUT LRegres
     return m_pLinearRegression->Predict(xMatrix, yVector);
 }
 
-float LLinearRegression::LossValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
+double LLinearRegression::LossValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
 {
     return m_pLinearRegression->LossValue(xMatrix, yVector);
 }
@@ -292,33 +292,33 @@ public:
     }
 
     /// @brief 计算似然值, 似然值为0.0~1.0之间的数, 似然值值越大模型越好
-    float LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
+    double LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
     {
         // 检查参数
         // 特征值小于1说明模型还没有训练
         if (m_N < 1)
-            return -1.0f;
+            return -1.0;
         if (xMatrix.RowLen < 1)
-            return -1.0f;
+            return -1.0;
         if (xMatrix.RowLen != yVector.RowLen)
-            return -1.0f;
+            return -1.0;
         if (xMatrix.ColumnLen != m_N)
-            return -1.0f;
+            return -1.0;
         if (yVector.ColumnLen != 1)
-            return -1.0f;
+            return -1.0;
 
         LRegressionMatrix predictY;
         this->Predict(xMatrix, predictY);
 
-        float likelihood = 1.0f;
+        double likelihood = 1.0;
         for (unsigned int i = 0; i < yVector.RowLen; i++)
         {
             if (yVector[i][0] == REGRESSION_ONE)
                 likelihood *= predictY[i][0];
             else if (yVector[i][0] == REGRESSION_ZERO)
-                likelihood *= (1.0f - predictY[i][0]);
+                likelihood *= (1.0 - predictY[i][0]);
             else
-                return -1.0f;
+                return -1.0;
         }
 
         return likelihood;
@@ -328,9 +328,9 @@ private:
     /// @brief S型函数
     /// @param[in] input 输入值
     /// @param[out] output 存储输出值
-    void Sigmoid(float input, float& output) const
+    void Sigmoid(double input, double& output) const
     {
-        output = 1.0f/(1.0f + exp(input));
+        output = 1.0/(1.0 + exp(input));
     }
 
 private:
@@ -363,7 +363,7 @@ bool LLogisticRegression::Predict(IN const LRegressionMatrix& xMatrix, OUT LRegr
     return m_pLogisticRegression->Predict(xMatrix, yVector);
 }
 
-float LLogisticRegression::LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
+double LLogisticRegression::LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
 {
     return m_pLogisticRegression->LikelihoodValue(xMatrix, yVector);
 }
@@ -384,13 +384,13 @@ public:
     }
 
     /// @brief 训练模型
-    bool TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix, IN float alpha)
+    bool TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix, IN double alpha)
     {
         if (m_N == 0)
         {
             m_N = xMatrix.ColumnLen;
             m_K = yMatrix.ColumnLen;
-            m_wMatrix.Reset(m_N + 1, m_K, 0.0f);
+            m_wMatrix.Reset(m_N + 1, m_K, 0.0);
         }
         
         // 检查参数
@@ -405,7 +405,7 @@ public:
         if (yMatrix.ColumnLen != m_K)
             return false;
 
-        if (alpha <= 0.0f)
+        if (alpha <= 0.0)
             return false;
 
         // 增加常数项后的样本矩阵
@@ -416,7 +416,7 @@ public:
         LRegressionMatrix& W = m_wMatrix;
 
         // 概率矩阵
-        LRegressionMatrix P(X.RowLen, m_K, 0.0f);
+        LRegressionMatrix P(X.RowLen, m_K, 0.0);
 
         // 计算概率矩阵
         this->SampleProbK(X, W, P);
@@ -471,26 +471,68 @@ public:
         return true;
     }
 
-    /// @brief 计算似然值, 似然值为0.0~1.0之间的数, 似然值值越大模型越好
-    float LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix) const
+    /// @brief 计算模型得分
+    double Score(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix) const
     {
         // 检查参数
-        // 特征值小于1说明模型还没有训练
-        if (m_N < 1)
-            return -1.0f;
+        if (m_N < 1 || m_K < 2)
+            return -1.0;
         if (xMatrix.RowLen < 1)
-            return -1.0f;
-        if (xMatrix.RowLen != yMatrix.RowLen)
-            return -1.0f;
+            return -1.0;
         if (xMatrix.ColumnLen != m_N)
-            return -1.0f;
+            return -1.0;
+        if (yMatrix.RowLen != xMatrix.RowLen)
+            return -1.0;
         if (yMatrix.ColumnLen != m_K)
-            return -1.0f;
+            return -1.0;
 
         LRegressionMatrix predictY;
         this->Predict(xMatrix, predictY);
 
-        float likelihood = 1.0f;
+        double score = 0.0;
+        for (unsigned int row = 0; row < yMatrix.RowLen; row++)
+        {
+            unsigned int label;
+            unsigned int predictLabel;
+            double maxProb = 0.0;
+            for (unsigned int col = 0; col < yMatrix.ColumnLen; col++)
+            {
+                if (yMatrix[row][col] == REGRESSION_ONE)
+                    label = col;
+                if (predictY[row][col] > maxProb)
+                {
+                    maxProb = predictY[row][col];
+                    predictLabel = col;
+                }
+            }
+
+            if (label == predictLabel)
+                score += 1.0;
+        }
+
+        return score / (double)yMatrix.RowLen;
+    }
+
+    /// @brief 计算似然值, 似然值为0.0~1.0之间的数, 似然值值越大模型越好
+    double LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix) const
+    {
+        // 检查参数
+        // 特征值小于1说明模型还没有训练
+        if (m_N < 1)
+            return -1.0;
+        if (xMatrix.RowLen < 1)
+            return -1.0;
+        if (xMatrix.RowLen != yMatrix.RowLen)
+            return -1.0;
+        if (xMatrix.ColumnLen != m_N)
+            return -1.0;
+        if (yMatrix.ColumnLen != m_K)
+            return -1.0;
+
+        LRegressionMatrix predictY;
+        this->Predict(xMatrix, predictY);
+
+        double likelihood = 1.0;
         for (unsigned int i = 0; i < yMatrix.RowLen; i++)
         {
             for (unsigned int j = 0; j < yMatrix.ColumnLen; j++)
@@ -529,7 +571,7 @@ private:
 
         for (unsigned int row = 0; row < probMatrix.RowLen; row++)
         {
-            float sum = 0.0f;
+            double sum = 0.0;
             for (unsigned int col = 0; col < probMatrix.ColumnLen; col++)
             {
                 sum += probMatrix[row][col];
@@ -565,7 +607,7 @@ LSoftmaxRegression::~LSoftmaxRegression()
 }
 
 
-bool LSoftmaxRegression::TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix, IN float alpha)
+bool LSoftmaxRegression::TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix, IN double alpha)
 {
     return m_pSoftmaxRegression->TrainModel(xMatrix, yMatrix, alpha);
 }
@@ -575,7 +617,12 @@ bool LSoftmaxRegression::Predict(IN const LRegressionMatrix& xMatrix, OUT LRegre
     return m_pSoftmaxRegression->Predict(xMatrix, yMatrix);
 }
 
-float LSoftmaxRegression::LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix) const
+double LSoftmaxRegression::Score(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix) const
+{
+    return m_pSoftmaxRegression->Score(xMatrix, yMatrix);
+}
+
+double LSoftmaxRegression::LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix) const
 {
     return m_pSoftmaxRegression->LikelihoodValue(xMatrix, yMatrix);
 }

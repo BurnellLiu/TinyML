@@ -17,149 +17,10 @@
 /// 梯度下降算法: 每次训练使用所有样本集, 如果样本集很大, 则导致内存开销大, 并且训练耗时长, 优点是收敛快
 /// 随机梯度下降算法: 每次训练使用样本集中的一个样本, 缺点是收敛慢
 /// 批量梯度下降算法: 综合以上两种
-/// @author Burnell_Liu Email:burnell_liu@outlook.com
+/// @author Jie_Liu Email:burnell_liu@outlook.com
 /// @version   
-/// @date 2017/09/29
+/// @date 2018/01/31
 
-/*  使用线性回归示例代码如下:
-
-// 定义训练样本
-float trainX[4] =
-{
-    2.0f,
-    4.0f,
-    6.0f,
-    8.0f
-};
-LRegressionMatrix xMatrix(4, 1, trainX);
-
-// 定义训练样本输出
-float trainY[4] =
-{
-    1.0f,
-    2.0f,
-    3.0f,
-    4.0f
-};
-LRegressionMatrix yMatrix(4, 1, trainY);
-
-
-// 定义线性回归对象
-LLinearRegression linearReg;
-
-// 训练模型
-// 计算每一次训练后的损失值
-for (unsigned int i = 0; i < 10; i++)
-{
-    linearReg.TrainModel(xMatrix, yMatrix, 0.01f);
-    float loss = linearReg.LossValue(xMatrix, yMatrix);
-}
-
-// 进行预测
-LRegressionMatrix yVector;
-linearReg.Predict(xMatrix, yVector);
-*/
-
-
-/*  使用逻辑回归示例代码如下:
-
-// 训练样本数据
-float trainSample[36] =
-{
-    1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-    1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-    1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-    0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-    0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-    0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f
-};
-LRegressionMatrix X(6, 6, trainSample);
-
-// 训练样本标签数据
-float trainLabel[12] =
-{
-    1.0f,
-    1.0f,
-    1.0f,
-    0.0f,
-    0.0f,
-    0.0f
-};
-LRegressionMatrix Y(6, 1, trainLabel);
-
-// 定义逻辑回归
-LLogisticRegression logisticReg;
-
-// 训练100次
-// 计算每一次训练后的似然值
-for (unsigned int i = 0; i < 100; i++)
-{
-    logisticReg.TrainModel(X, Y, 0.6f);
-    float likelihood = logisticReg.LikelihoodValue(X, Y);
-}
-
-// 测试样本
-float testSample[12] =
-{
-    1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-    0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f
-};
-LRegressionMatrix testX(2, 6, testSample);
-
-// 对测试样本进行预测
-LRegressionMatrix testY;
-logisticReg.Predict(testX, testY);
-*/
-
-
-/*  使用Softmax回归示例代码如下:
-
-// 训练样本数据
-float trainSample[36] = 
-{
-    1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-    1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-    1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-    0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-    0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-    0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f
-};
-LRegressionMatrix X(6, 6, trainSample);
-
-// 训练样本标签数据
-float trainLabel[12] = 
-{
-    1.0f, 0.0f,
-    1.0f, 0.0f,
-    1.0f, 0.0f,
-    0.0f, 1.0f,
-    0.0f, 1.0f,
-    0.0f, 1.0f
-};
-LRegressionMatrix Y(6, 2, trainLabel);
-
-// 定义Softmax回归
-LSoftmaxRegression softmaxReg;
-
-// 训练500次
-for (unsigned int i = 0; i < 500; i++)
-{
-    softmaxReg.TrainModel(X, Y, 0.1f);
-    float likelihood = softmaxReg.LikelihoodValue(X, Y);
-}
-
-// 测试样本
-float testSample[12] = 
-{
-    1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-    0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f
-};
-LRegressionMatrix testX(2, 6, testSample);
-
-// 对测试样本进行预测
-LRegressionMatrix testY;
-softmaxReg.Predict(testX, testY);
-*/
 
 #ifndef _LREGRESSION_H_
 #define _LREGRESSION_H_
@@ -167,7 +28,7 @@ softmaxReg.Predict(testX, testY);
 
 #include "LMatrix.h"
 
-typedef LMatrix<float> LRegressionMatrix;
+typedef LMatrix<double> LRegressionMatrix;
 
 class CLinearRegression;
 
@@ -200,8 +61,8 @@ public:
     /// @brief 计算损失值, 损失值为大于等于0的数, 损失值越小模型越好
     /// @param[in] xMatrix 样本矩阵, 每一行代表一个样本, 每一列代表样本的一个特征
     /// @param[in] yVector(列向量) 样本输出向量, 每一行代表一个样本
-    /// @return 成功返回损失值, 失败返回-1.0f(参数错误的情况下会返回失败)
-    float LossValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const;
+    /// @return 成功返回损失值, 失败返回-1.0(参数错误的情况下会返回失败)
+    double LossValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const;
 
 private:
     CLinearRegression* m_pLinearRegression; ///< 线性回归实现对象
@@ -209,12 +70,12 @@ private:
 
 /// @brief 回归中的ZERO分类
 #ifndef REGRESSION_ZERO
-#define REGRESSION_ZERO 0.0f
+#define REGRESSION_ZERO 0.0
 #endif
 
 /// @brief 回归中的ONE分类
 #ifndef REGRESSION_ONE
-#define REGRESSION_ONE 1.0f
+#define REGRESSION_ONE  1.0
 #endif
 
 class CLogisticRegression;
@@ -250,7 +111,7 @@ public:
     /// @param[in] xMatrix 样本矩阵, 每一行代表一个样本, 每一列代表样本的一个特征
     /// @param[in] yVector(列向量) 样本输出向量, 每一行代表一个样本, 值只能为REGRESSION_ONE或REGRESSION_ZERO
     /// @return 成功返回似然值, 失败返回-1.0f(参数错误的情况下会返回失败)
-    float LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const;
+    double LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const;
 
 private:
     CLogisticRegression* m_pLogisticRegression; ///< 逻辑回归实现类
@@ -279,7 +140,7 @@ public:
     /// 如果样本属于该类别则标记为REGRESSION_ONE, 不属于则标记为REGRESSION_ZERO
     /// @param[in] alpha 学习速度, 该值必须大于0.0f
     /// @return 成功返回true, 失败返回false(参数错误的情况下会返回失败)
-    bool TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix, IN float alpha);
+    bool TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix, IN double alpha);
 
     /// @brief 使用训练好的模型预测数据
     /// @param[in] xMatrix 需要预测的样本矩阵
@@ -287,12 +148,19 @@ public:
     /// @return 成功返回true, 失败返回false(参数错误的情况下会返回失败)
     bool Predict(IN const LRegressionMatrix& xMatrix, OUT LRegressionMatrix& yMatrix) const;
 
+    /// @brief 计算模型得分
+    /// @param[in] xMatrix 样本矩阵
+    /// @param[in] yMatrix 类标记矩阵, 每一行代表一个样本, 每一列代表样本的一个类别
+    /// 如果样本属于该类别则标记为REGRESSION_ONE, 不属于则标记为REGRESSION_ZERO
+    /// @return 得分 值为0.0~1.0, 模型未训练或者参数有误返回-1.0
+    double Score(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix) const;
+
     /// @brief 计算似然值, 似然值为0.0~1.0之间的数, 似然值值越大模型越好
     /// @param[in] xMatrix 样本矩阵, 每一行代表一个样本, 每一列代表样本的一个特征
     /// @param[in] yMatrix 类标记矩阵, 每一行代表一个样本, 每一列代表样本的一个类别
     /// 如果样本属于该类别则标记为REGRESSION_ONE, 不属于则标记为REGRESSION_ZERO
     /// @return 成功返回似然值, 失败返回-1.0f(参数错误的情况下会返回失败)
-    float LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix) const;
+    double LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yMatrix) const;
 
 private:
     CSoftmaxRegression* m_pSoftmaxRegression; ///< Softmax回归实现对象

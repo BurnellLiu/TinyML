@@ -1,12 +1,14 @@
-
+﻿
 #include "../../../Src/LDecisionTree.h"
-#include "../../../Src/CSVIo.h"
+#include "../../../Src/LCSVIo.h"
+#include "../../../Src/LPreProcess.h"
 
 #include <cstdio>
-#include <windows.h>
+#include <cstdlib>
 
-/// @brief ��ӡ����
-void PrintMatrix(IN const LDataMatrix& dataMatrix)
+
+/// @brief 打印矩阵
+void MatrixPrint(IN const LDataMatrix& dataMatrix)
 {
     printf("Matrix Row: %u  Col: %u\n", dataMatrix.RowLen, dataMatrix.ColumnLen);
     for (unsigned int i = 0; i < dataMatrix.RowLen; i++)
@@ -22,22 +24,36 @@ void PrintMatrix(IN const LDataMatrix& dataMatrix)
 
 int main()
 {
-    // �������ݼ�
+    // 加载数据集
     LCSVParser csvParser(L"../../../DataSet/iris.csv");
     csvParser.SetSkipHeader(true);
     LDataMatrix dataMatrix;
     csvParser.LoadAllData(dataMatrix);
 
-    unsigned int rowLen = dataMatrix.RowLen;
-    unsigned int colLen = dataMatrix.ColumnLen;
+    // 打乱数据集
+    DoubleMatrixShuffle(0, dataMatrix);
 
-    // �����ݼ����Ϊ�������ϱ�ǩ��
-    LDTCMatrix xMatrix;
-    LDTCMatrix yVector;
-    dataMatrix.SubMatrix(0, rowLen, 0, colLen - 1, xMatrix);
-    dataMatrix.SubMatrix(0, rowLen, colLen - 1, 1, yVector);
+    // 将数据集拆分为训练集和测试集, 测试集占总集合的20%
+    unsigned int testSize = (unsigned int)(dataMatrix.RowLen * 0.2);
+    LDTCMatrix trainData;
+    LDTCMatrix testData;
+    dataMatrix.SubMatrix(0, testSize, 0, dataMatrix.ColumnLen, testData);
+    dataMatrix.SubMatrix(testSize, dataMatrix.RowLen - testSize, 0, dataMatrix.ColumnLen, trainData);
+    
+    // 将训练集拆分为训练样本集合和标签集
+    LDTCMatrix trainXMatrix;
+    LDTCMatrix trainYVector;
+    trainData.SubMatrix(0, trainData.RowLen, 0, trainData.ColumnLen - 1, trainXMatrix);
+    trainData.SubMatrix(0, trainData.RowLen, trainData.ColumnLen - 1, 1, trainYVector);
 
-    // ��������ֵ�ֲ�����
+    // 将测试集拆分为测试样本集合和标签集
+    LDTCMatrix testXMatrix;
+    LDTCMatrix testYVector;
+    testData.SubMatrix(0, testData.RowLen, 0, testData.ColumnLen - 1, testXMatrix);
+    testData.SubMatrix(0, testData.RowLen, testData.ColumnLen - 1, 1, testYVector);
+
+
+    // 定义特征值分布向量
     double featureN[4] = 
     {
         DTC_FEATURE_CONTINUUM, 
@@ -47,15 +63,18 @@ int main()
     };
     LDTCMatrix nVector(1, 4, featureN);
 
+    // 使用训练集训练模型
     LDecisionTreeClassifier clf;
-    clf.TrainModel(xMatrix, nVector, yVector);
-    //clf.PrintTree();
+    clf.TrainModel(trainXMatrix, nVector, trainYVector);
+    clf.Prune(0.25);
+    clf.PrintTree();
 
-    double score = clf.Score(xMatrix, yVector);
+    // 使用测试集计算模型得分
+    double score = clf.Score(testXMatrix, testYVector);
 
-    //printf("Model Score: %.2f\n", score);
+    printf("Model Score: %.2f\n", score);
 
-    //system("pause");
+    system("pause");
 
     return 0;
 }

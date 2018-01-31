@@ -2,7 +2,7 @@
 /// @brief  决策树头文件
 /// 
 /// Detail:该文件声明了决策树分类器
-/// @author Jie_Liu  
+/// @author Email:burnell_liu@outlook.com
 /// @version   
 /// @date 2018/01/29
 
