@@ -50,7 +50,7 @@ public:
     /// @param[in] yVector(列向量) 样本输出向量, 每一行代表一个样本
     /// @param[in] alpha 学习速度, 该值必须大于0.0f
     /// @return 成功返回true, 失败返回false(参数错误的情况下会返回失败)
-    bool TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector, IN float alpha);
+    bool TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector, IN double alpha);
 
     /// @brief 使用训练好的模型预测数据
     /// @param[in] xMatrix 需要预测的样本矩阵
@@ -99,13 +99,19 @@ public:
     /// @param[in] yVector(列向量) 样本标记向量, 每一行代表一个样本, 值只能为REGRESSION_ONE或REGRESSION_ZERO 
     /// @param[in] alpha 学习速度, 该值必须大于0.0f
     /// @return 成功返回true, 失败返回false(参数错误的情况下会返回失败)
-    bool TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector, IN float alpha);
+    bool TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector, IN double alpha);
 
     /// @brief 使用训练好的模型预测数据
     /// @param[in] xMatrix 需要预测的样本矩阵
     /// @param[out] yVector 存储预测的结果向量(列向量), 值为REGRESSION_ONE标记的概率
     /// @return 成功返回true, 失败返回false(模型未训练或参数错误的情况下会返回失败)
     bool Predict(IN const LRegressionMatrix& xMatrix, OUT LRegressionMatrix& yVector) const;
+
+    /// @brief 计算模型得分
+    /// @param[in] xMatrix 样本矩阵, 每一行代表一个样本, 每一列代表样本的一个特征
+    /// @param[in] yVector 样本标记向量(列向量), 每一行代表一个样本, 值只能为REGRESSION_ONE或REGRESSION_ZERO 
+    /// @return 得分 值为0.0~1.0, 模型未训练或者参数有误返回-1.0
+    double Score(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const;
 
     /// @brief 计算似然值, 似然值为0.0~1.0之间的数, 似然值值越大模型越好
     /// @param[in] xMatrix 样本矩阵, 每一行代表一个样本, 每一列代表样本的一个特征
@@ -149,7 +155,7 @@ public:
     bool Predict(IN const LRegressionMatrix& xMatrix, OUT LRegressionMatrix& yMatrix) const;
 
     /// @brief 计算模型得分
-    /// @param[in] xMatrix 样本矩阵
+    /// @param[in] xMatrix 样本矩阵, 每一行代表一个样本, 每一列代表样本的一个特征
     /// @param[in] yMatrix 类标记矩阵, 每一行代表一个样本, 每一列代表样本的一个类别
     /// 如果样本属于该类别则标记为REGRESSION_ONE, 不属于则标记为REGRESSION_ZERO
     /// @return 得分 值为0.0~1.0, 模型未训练或者参数有误返回-1.0

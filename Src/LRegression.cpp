@@ -41,7 +41,7 @@ public:
     }
 
     /// @brief 训练模型
-    bool TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector, IN float alpha)
+    bool TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector, IN double alpha)
     {
         // 第一次训练, 记录下特征值数量, 并且初始化权重向量为0.0
         if (m_N == 0)
@@ -62,7 +62,7 @@ public:
             return false;
         if (yVector.RowLen != xMatrix.RowLen)
             return false;
-        if (alpha <= 0.0f)
+        if (alpha <= 0.0)
             return false;
 
         LRegressionMatrix X;
@@ -83,7 +83,7 @@ public:
         LRegressionMatrix::MUL(X, W, XW);
         LRegressionMatrix::SUB(XW, Y, XW);
         LRegressionMatrix::MUL(XT, XW, DW);
-        LRegressionMatrix::SCALARMUL(DW, -1.0f * alpha, DW);
+        LRegressionMatrix::SCALARMUL(DW, -1.0 * alpha, DW);
         LRegressionMatrix::ADD(W, DW, W);
 
         return true;
@@ -161,7 +161,7 @@ LLinearRegression::~LLinearRegression()
     }
 }
 
-bool LLinearRegression::TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector, IN float alpha)
+bool LLinearRegression::TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector, IN double alpha)
 {
     return m_pLinearRegression->TrainModel(xMatrix, yVector, alpha);
 }
@@ -198,7 +198,7 @@ public:
     }
 
     /// @brief 训练模型
-    bool TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector, IN float alpha)
+    bool TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector, IN double alpha)
     {
         // 第一次训练, 记录下特征值数量, 并且初始化权重向量为0.0
         if (m_N == 0)
@@ -221,7 +221,7 @@ public:
         if (yVector.RowLen != xMatrix.RowLen)
             return false;
 
-        if (alpha <= 0.0f)
+        if (alpha <= 0.0)
             return false;
 
         for (unsigned int i = 0; i < yVector.RowLen; i++)
@@ -291,6 +291,47 @@ public:
 
     }
 
+    /// @brief 计算模型得分
+    double Score(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
+    {
+        // 检查参数
+        // 特征值小于1说明模型还没有训练
+        if (m_N < 1)
+            return -1.0;
+        if (xMatrix.RowLen < 1)
+            return -1.0;
+        if (xMatrix.RowLen != yVector.RowLen)
+            return -1.0;
+        if (xMatrix.ColumnLen != m_N)
+            return -1.0;
+        if (yVector.ColumnLen != 1)
+            return -1.0;
+
+        LRegressionMatrix predictY;
+        this->Predict(xMatrix, predictY);
+
+        double score = 0.0;
+        for (unsigned int i = 0; i < yVector.RowLen; i++)
+        {
+            if (yVector[i][0] == REGRESSION_ONE)
+            {
+                if (predictY[i][0] >= 0.5)
+                    score += 1.0;
+            }
+            else if (yVector[i][0] == REGRESSION_ZERO)
+            {
+                if (predictY[i][0] < 0.5)
+                    score += 1.0;
+            }
+            else
+            {
+                return -1.0;
+            }
+        }
+
+        return score / (double)yVector.RowLen;
+    }
+
     /// @brief 计算似然值, 似然值为0.0~1.0之间的数, 似然值值越大模型越好
     double LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
     {
@@ -353,7 +394,7 @@ LLogisticRegression::~LLogisticRegression()
     }
 }
 
-bool LLogisticRegression::TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector, IN float alpha)
+bool LLogisticRegression::TrainModel(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector, IN double alpha)
 {
     return m_pLogisticRegression->TrainModel(xMatrix, yVector, alpha);
 }
@@ -361,6 +402,11 @@ bool LLogisticRegression::TrainModel(IN const LRegressionMatrix& xMatrix, IN con
 bool LLogisticRegression::Predict(IN const LRegressionMatrix& xMatrix, OUT LRegressionMatrix& yVector) const
 {
     return m_pLogisticRegression->Predict(xMatrix, yVector);
+}
+
+double LLogisticRegression::Score(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
+{
+    return m_pLogisticRegression->Score(xMatrix, yVector);
 }
 
 double LLogisticRegression::LikelihoodValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
