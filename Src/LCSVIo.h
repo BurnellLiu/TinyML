@@ -32,6 +32,11 @@ public:
     /// @param[in] skip true(跳过), false(不跳过)
     void SetSkipHeader(IN bool skip);
 
+    /// @brief 设置分隔符
+    /// 默认分隔符为 ','
+    /// @param[in] ch 设置的分隔符
+    void SetDelimiter(IN wchar_t ch);
+
     /// @brief 加载所有数据
     /// @param[in] dataMatrix 存储数据
     bool LoadAllData(OUT LDataMatrix& dataMatrix);

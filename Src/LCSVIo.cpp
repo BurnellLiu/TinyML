@@ -99,6 +99,7 @@ public:
     {
         m_fileName = fileName;
         m_bSkipHeader = false;
+        m_delimiter = L',';
     }
 
     /// @brief 析构函数
@@ -111,6 +112,12 @@ public:
     void SetSkipHeader(IN bool skip)
     {
         m_bSkipHeader = skip;
+    }
+
+    /// @brief 设置分隔符
+    void SetDelimiter(IN wchar_t ch)
+    {
+        m_delimiter = ch;
     }
 
     /// @brief 加载所有数据
@@ -139,7 +146,7 @@ public:
 
             // 分割字符串
             vector<wstring> strList;
-            WStringSplit(L',', str, strList);
+            WStringSplit(m_delimiter, str, strList);
 
             // 检查每个字符串是否为空
             for (auto iter = strList.begin(); iter != strList.end(); iter++)
@@ -184,6 +191,7 @@ public:
 
 private:
     bool m_bSkipHeader; ///< 跳过首行
+    wchar_t m_delimiter; ///< 分隔符
     wstring m_fileName; ///< 文件名
 
 };
@@ -206,6 +214,11 @@ LCSVParser::~LCSVParser()
 void LCSVParser::SetSkipHeader(IN bool skip)
 {
     m_pParser->SetSkipHeader(skip);
+}
+
+void LCSVParser::SetDelimiter(IN wchar_t ch)
+{
+    m_pParser->SetDelimiter(ch);
 }
 
 bool LCSVParser::LoadAllData(OUT LDataMatrix& dataMatrix)
