@@ -58,11 +58,11 @@ public:
     /// @return 成功返回true, 失败返回false(模型未训练或参数错误的情况下会返回失败)
     bool Predict(IN const LRegressionMatrix& xMatrix, OUT LRegressionMatrix& yVector) const;
 
-    /// @brief 计算损失值, 损失值为大于等于0的数, 损失值越小模型越好
+    /// @brief 计算模型得分
     /// @param[in] xMatrix 样本矩阵, 每一行代表一个样本, 每一列代表样本的一个特征
-    /// @param[in] yVector(列向量) 样本输出向量, 每一行代表一个样本
-    /// @return 成功返回损失值, 失败返回-1.0(参数错误的情况下会返回失败)
-    double LossValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const;
+    /// @param[in] yVector (列向量) 样本输出向量, 每一行代表一个样本
+    /// @return 相关指数R^2, 该值最大值为1, 该值越接近1, 表示回归的效果越好, 如果有错误则返回2.0
+    double Score(IN const LRegressionMatrix& xMatrix, IN LRegressionMatrix& yVector) const;
 
 private:
     CLinearRegression* m_pLinearRegression; ///< 线性回归实现对象

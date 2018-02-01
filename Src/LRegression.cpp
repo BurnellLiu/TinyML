@@ -110,35 +110,36 @@ public:
         return true;
     }
 
-    /// @brief 计算损失值
-    double LossValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
+    /// @brief 计算模型得分
+    double Score(IN const LRegressionMatrix& xMatrix, IN LRegressionMatrix& yVector) const
     {
-        // 检查参数
-        // 特征值小于1说明模型还没有训练
-        if (m_N < 1)
-            return -1.0;
-        if (xMatrix.RowLen < 1)
-            return -1.0;
-        if (xMatrix.RowLen != yVector.RowLen)
-            return -1.0;
-        if (xMatrix.ColumnLen != m_N)
-            return -1.0;
-        if (yVector.ColumnLen != 1)
-            return -1.0;
+        LRegressionMatrix predictY;
+        bool bRet = this->Predict(xMatrix, predictY);
+        if (!bRet)
+            return 2.0;
 
-        LRegressionMatrix X;
-        LRegressionMatrix Y;
-        Regression::SamplexAddConstant(xMatrix, X);
 
-        LRegressionMatrix::MUL(X, m_wVector, Y);
-        LRegressionMatrix::SUB(Y, yVector, Y);
-        LRegressionMatrix YT;
-        LRegressionMatrix::T(Y, YT);
+        double sumY = 0.0;
+        for (unsigned int i = 0; i < yVector.RowLen; i++)
+        {
+            sumY += yVector[i][0];
+        }
+        double meanY = sumY / (double)yVector.RowLen;
 
-        LRegressionMatrix LOSS;
-        LRegressionMatrix::MUL(YT, Y, LOSS);
+        double lossValue = 0.0;
+        double denominator = 0.0;
+        for (unsigned int i = 0; i < yVector.RowLen; i++)
+        {
+            double dis = yVector[i][0] - predictY[i][0];
+            lossValue += dis * dis;
 
-        return LOSS[0][0]/2.0;
+            dis = yVector[i][0] - meanY;
+            denominator += dis * dis;
+        }
+
+        double score = 1.0 - lossValue / denominator;
+
+        return score;
     }
 
 private:
@@ -171,10 +172,11 @@ bool LLinearRegression::Predict(IN const LRegressionMatrix& xMatrix, OUT LRegres
     return m_pLinearRegression->Predict(xMatrix, yVector);
 }
 
-double LLinearRegression::LossValue(IN const LRegressionMatrix& xMatrix, IN const LRegressionMatrix& yVector) const
+double LLinearRegression::Score(IN const LRegressionMatrix& xMatrix, IN LRegressionMatrix& yVector) const
 {
-    return m_pLinearRegression->LossValue(xMatrix, yVector);
+    return m_pLinearRegression->Score(xMatrix, yVector);
 }
+
 
 /// @brief 逻辑回归(分类)实现类
 /// 逻辑函数为 h(x)  =  1/(1 + e^(X * W)) 
