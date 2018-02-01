@@ -47,7 +47,7 @@ public:
         if (m_N == 0)
         {
             m_N = xMatrix.ColumnLen;
-            m_wVector.Reset(m_N + 1, 1, 0.0f);
+            m_wVector.Reset(m_N + 1, 1, 0.0);
         }
 
 
