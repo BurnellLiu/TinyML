@@ -25,7 +25,32 @@ void MatrixPrint(IN const LDataMatrix& dataMatrix)
 
 void TestLinearRegression()
 {
+    // 加载糖尿病数据集
+    LCSVParser dataCSVParser(L"../../../DataSet/diabetes_data.csv");
+    dataCSVParser.SetDelimiter(L' ');
+    LDataMatrix xMatrix;
+    dataCSVParser.LoadAllData(xMatrix);
+    MatrixPrint(xMatrix);
 
+    LCSVParser targetCSVParser(L"../../../DataSet/diabetes_target.csv");
+    LDataMatrix yVector;
+    targetCSVParser.LoadAllData(yVector);
+
+
+    // 定义线性回归对象
+    LLinearRegression linearReg;
+
+    // 训练模型
+    // 计算每一次训练后的损失值
+    for (unsigned int i = 0; i < 500; i++)
+    {
+        linearReg.TrainModel(xMatrix, yVector, 0.003f);
+        double loss = linearReg.LossValue(xMatrix, yVector);
+        printf("Train Time: %u  ", i);
+        printf("Loss Value: %.2f\n", loss);
+    }
+
+    
 }
 
 /// @brief 测试逻辑回归
@@ -150,8 +175,8 @@ void TestSoftmaxRegression()
 
 int main()
 {
-    // TestLinearRegression();
-    TestLogisticRegression();
+    TestLinearRegression();
+    // TestLogisticRegression();
     // TestSoftmaxRegression();
 
     system("pause");
