@@ -83,7 +83,7 @@ public:
     }
 
     /// @brief 训练模型
-    bool TrainModel(IN const LDTCMatrix& xMatrix, IN const LDTCMatrix& nVector, IN const LDTCMatrix& yVector)
+    bool TrainModel(IN const LDTMatrix& xMatrix, IN const LDTMatrix& nVector, IN const LDTMatrix& yVector)
     {
         // 检查参数
         if (xMatrix.RowLen < 1)
@@ -100,7 +100,7 @@ public:
             return false;
         for (unsigned int i = 0; i < nVector.ColumnLen; i++)
         {
-            if (nVector[0][i] != DTC_FEATURE_DISCRETE && nVector[0][i] != DTC_FEATURE_CONTINUUM)
+            if (nVector[0][i] != DT_FEATURE_DISCRETE && nVector[0][i] != DT_FEATURE_CONTINUUM)
                 return false;
         }
 
@@ -148,7 +148,7 @@ public:
     }
 
     /// @brief 使用训练好的模型预测数据
-    bool Predict(IN const LDTCMatrix& xMatrix, OUT LDTCMatrix& yVector) const
+    bool Predict(IN const LDTMatrix& xMatrix, OUT LDTMatrix& yVector) const
     {
         // 检查参数
         if (nullptr == m_pRootNode)
@@ -170,7 +170,7 @@ public:
     }
 
     /// @brief 计算模型得分
-    double Score(IN const LDTCMatrix& xMatrix, IN const LDTCMatrix& yVector) const
+    double Score(IN const LDTMatrix& xMatrix, IN const LDTMatrix& yVector) const
     {
         // 检查参数
         if (nullptr == m_pRootNode)
@@ -184,7 +184,7 @@ public:
         if (yVector.RowLen != xMatrix.RowLen)
             return -1.0;
 
-        LDTCMatrix predictVector;
+        LDTMatrix predictVector;
         this->Predict(xMatrix, predictVector);
         if (predictVector.RowLen != yVector.RowLen)
             return -1.0;
@@ -292,9 +292,9 @@ private:
     /// @brief 递归预测数据
     void RecursionPredicty(
         IN CDecisionTreeNode* pNode, 
-        IN const LDTCMatrix& xMatrix, 
+        IN const LDTMatrix& xMatrix, 
         IN unsigned int idx, 
-        OUT LDTCMatrix& yVector) const
+        OUT LDTMatrix& yVector) const
     {
         if (pNode == nullptr)
             return;
@@ -325,14 +325,14 @@ private:
         // 分支结点
         double currentValue = xMatrix[idx][pNode->CheckColumn];
         double checkVallue = pNode->CheckValue;
-        if (pNode->FeatureDis == DTC_FEATURE_DISCRETE)
+        if (pNode->FeatureDis == DT_FEATURE_DISCRETE)
         {
             if (currentValue == checkVallue)
                 this->RecursionPredicty(pNode->PTrueChildren, xMatrix, idx, yVector);
             else
                 this->RecursionPredicty(pNode->PFalseChildren, xMatrix, idx, yVector);
         }
-        else if (pNode->FeatureDis == DTC_FEATURE_CONTINUUM)
+        else if (pNode->FeatureDis == DT_FEATURE_CONTINUUM)
         {
             if (currentValue >= checkVallue)
                 this->RecursionPredicty(pNode->PTrueChildren, xMatrix, idx, yVector);
@@ -438,7 +438,7 @@ private:
         xTrueList.clear();
         xFalseList.clear();
 
-        if ((*m_pNVector)[0][column] == DTC_FEATURE_DISCRETE)
+        if ((*m_pNVector)[0][column] == DT_FEATURE_DISCRETE)
         {
             for (unsigned int i = 0; i < xIdxList.size(); i++)
             {
@@ -453,7 +453,7 @@ private:
             
         }
         
-        if ((*m_pNVector)[0][column] == DTC_FEATURE_CONTINUUM)
+        if ((*m_pNVector)[0][column] == DT_FEATURE_CONTINUUM)
         {
             for (unsigned int i = 0; i < xIdxList.size(); i++)
             {
@@ -530,9 +530,9 @@ private:
 
 
 private:
-    const LDTCMatrix* m_pXMatrix;   ///< 样本矩阵, 训练时所用临时变量
-    const LDTCMatrix* m_pYVector;   ///< 标签向量(列向量), 训练时所用临时变量
-    const LDTCMatrix* m_pNVector;   ///< 特征分布向量(行向量), 训练时所用临时变量
+    const LDTMatrix* m_pXMatrix;   ///< 样本矩阵, 训练时所用临时变量
+    const LDTMatrix* m_pYVector;   ///< 标签向量(列向量), 训练时所用临时变量
+    const LDTMatrix* m_pNVector;   ///< 特征分布向量(行向量), 训练时所用临时变量
 
     unsigned int m_featureNum;      ///< 特征数
 
@@ -555,7 +555,7 @@ LDecisionTreeClassifier::~LDecisionTreeClassifier()
     }
 }
 
-bool LDecisionTreeClassifier::TrainModel(IN const LDTCMatrix& xMatrix, IN const LDTCMatrix& nVector, IN const LDTCMatrix& yVector)
+bool LDecisionTreeClassifier::TrainModel(IN const LDTMatrix& xMatrix, IN const LDTMatrix& nVector, IN const LDTMatrix& yVector)
 {
     return m_pClassifier->TrainModel(xMatrix, nVector, yVector);
 }
@@ -565,12 +565,12 @@ void LDecisionTreeClassifier::Prune(IN double minGain)
     m_pClassifier->Prune(minGain);
 }
 
-bool LDecisionTreeClassifier::Predict(IN const LDTCMatrix& xMatrix, OUT LDTCMatrix& yVector) const
+bool LDecisionTreeClassifier::Predict(IN const LDTMatrix& xMatrix, OUT LDTMatrix& yVector) const
 {
     return m_pClassifier->Predict(xMatrix, yVector);
 }
 
-double LDecisionTreeClassifier::Score(IN const LDTCMatrix& xMatrix, IN const LDTCMatrix& yVector) const
+double LDecisionTreeClassifier::Score(IN const LDTMatrix& xMatrix, IN const LDTMatrix& yVector) const
 {
     return m_pClassifier->Score(xMatrix, yVector);
 }
