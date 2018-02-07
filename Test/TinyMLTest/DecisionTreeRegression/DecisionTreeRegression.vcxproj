@@ -113,6 +113,7 @@
     <ClCompile Include="..\..\..\Src\LCSVIo.cpp" />
     <ClCompile Include="..\..\..\Src\LDecisionTree.cpp" />
     <ClCompile Include="..\..\..\Src\LPreProcess.cpp" />
+    <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Src\LCSVIo.h" />

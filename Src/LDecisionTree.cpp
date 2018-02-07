@@ -586,12 +586,12 @@ void LDecisionTreeClassifier::PrintTree()
 /// @brief 回归树节点
 struct CDTRegressionNode
 {
-    unsigned int CheckColumn;           ///< 需要检验的列索引
-    double CheckValue;                  ///< 检验值, 为了使结果为true, 当前列必须匹配的值(如果是离散值则必须相等才为true, 如果是连续值则大于等于为true)
-    double FeatureDis;                  ///< 特征分布, 可以为DT_FEATURE_DISCRETE或DT_FEATURE_CONTINUUM
+    unsigned int CheckColumn;           ///< 需要检验的列索引, 叶子结点该值无意义
+    double CheckValue;                  ///< 检验值, 为了使结果为true, 当前列必须匹配的值(如果是离散值则必须相等才为true, 如果是连续值则大于等于为true), 叶子结点该值无意义
+    double FeatureDis;                  ///< 特征分布, 可以为DT_FEATURE_DISCRETE或DT_FEATURE_CONTINUUM, 叶子结点该值无意义
 
-    CDTRegressionNode* PTrueChildren;   ///< 条件为true的分支结点
-    CDTRegressionNode* PFalseChildren;  ///< 条件为false的分支结点
+    CDTRegressionNode* PTrueChildren;   ///< 条件为true的分支结点, 叶子结点该值为nullptr
+    CDTRegressionNode* PFalseChildren;  ///< 条件为false的分支结点, 叶子结点该值为nullptr
 
     double Mean;                        ///< 该结点代表的均值
     double LossValue;                   ///< 该结点的损失值
@@ -637,11 +637,11 @@ public:
         }
 
         // 如果已经训练过, 则删除树
-//         if (m_pRootNode != nullptr)
-//         {
-//             this->RecursionDeleteTree(m_pRootNode);
-//             m_pRootNode = nullptr;
-//         }
+        if (m_pRootNode != nullptr)
+        {
+            this->RecursionDeleteTree(m_pRootNode);
+            m_pRootNode = nullptr;
+        }
 
         m_pXMatrix = &xMatrix;
         m_pYVector = &yVector;
@@ -657,7 +657,13 @@ public:
         }
 
         // 递归建树
-        m_pRootNode = RecursionBuildTree(xIdxList);
+        double lossValue = 0.0;
+        double mean = 0.0;
+        this->CalculateLossValue(xIdxList, mean, lossValue);
+        m_pRootNode = RecursionBuildTree(xIdxList, mean, lossValue);
+
+        vector<CDTRegressionNode*> nodeList;
+        this->RecursionEnumInsideNodeLRD(m_pRootNode, nodeList);
 
         m_pXMatrix = nullptr;
         m_pYVector = nullptr;
@@ -669,47 +675,192 @@ public:
     /// @brief 使用训练好的模型预测数据
     bool Predict(IN const LDTMatrix& xMatrix, OUT LDTMatrix& yVector) const
     {
+        // 检查参数
+        if (nullptr == m_pRootNode)
+            return false;
+        if (xMatrix.RowLen < 1)
+            return false;
+        if (xMatrix.ColumnLen != m_featureNum)
+            return false;
 
+        yVector.Reset(xMatrix.RowLen, 1, 0.0);
+
+        for (unsigned int i = 0; i < xMatrix.RowLen; i++)
+        {
+            this->RecursionPredicty(m_pRootNode, xMatrix, i, yVector);
+        }
+
+        return true;
     }
 
     /// @brief 计算模型得分
     double Score(IN const LDTMatrix& xMatrix, IN const LDTMatrix& yVector) const
     {
+        LDTMatrix predictY;
+        bool bRet = this->Predict(xMatrix, predictY);
+        if (!bRet)
+            return 2.0;
 
+
+        double sumY = 0.0;
+        for (unsigned int i = 0; i < yVector.RowLen; i++)
+        {
+            sumY += yVector[i][0];
+        }
+        double meanY = sumY / (double)yVector.RowLen;
+
+        double lossValue = 0.0;
+        double denominator = 0.0;
+        for (unsigned int i = 0; i < yVector.RowLen; i++)
+        {
+            double dis = yVector[i][0] - predictY[i][0];
+            lossValue += dis * dis;
+
+            dis = yVector[i][0] - meanY;
+            denominator += dis * dis;
+        }
+
+        double score = 1.0 - lossValue / denominator;
+
+        return score;
     }
 
     /// @brief 打印树, 用于调试
     void PrintTree() const
     {
-
+        printf("DecisionTreeRegression: \n");
+        this->RecursionPrintTree(m_pRootNode, "  ");
+        printf("\n");
     }
 
 private:
+    /// @brief 后序遍历内部结点
+    void RecursionEnumInsideNodeLRD(CDTRegressionNode* pNode, vector<CDTRegressionNode*> nodeList)
+    {
+        if (pNode == nullptr)
+            return;
+
+        if (pNode->PTrueChildren != 0)
+            this->RecursionEnumInsideNodeLRD(pNode->PTrueChildren, nodeList);
+        if (pNode->PFalseChildren != 0)
+            this->RecursionEnumInsideNodeLRD(pNode->PFalseChildren, nodeList);
+
+        if (pNode->PTrueChildren != nullptr && pNode->PFalseChildren != nullptr)
+            nodeList.push_back(pNode);
+
+    }
+
+    /// @brief 递归删除决策树
+    void RecursionDeleteTree(CDTRegressionNode* pNode)
+    {
+        if (pNode == nullptr)
+            return;
+
+        if (pNode->PTrueChildren != 0)
+            this->RecursionDeleteTree(pNode->PTrueChildren);
+        if (pNode->PFalseChildren != 0)
+            this->RecursionDeleteTree(pNode->PFalseChildren);
+
+
+        delete pNode;
+    }
+
+    /// @brief 递归预测数据
+    void RecursionPredicty(
+        IN CDTRegressionNode* pNode,
+        IN const LDTMatrix& xMatrix,
+        IN unsigned int idx,
+        OUT LDTMatrix& yVector) const
+    {
+        if (pNode == nullptr)
+            return;
+
+        // 叶子结点
+        if (pNode->PTrueChildren == nullptr &&
+            pNode->PFalseChildren == nullptr)
+        {
+            yVector[idx][0] = pNode->Mean;
+            return;
+        }
+
+        // 分支结点
+        double currentValue = xMatrix[idx][pNode->CheckColumn];
+        double checkVallue = pNode->CheckValue;
+        if (pNode->FeatureDis == DT_FEATURE_DISCRETE)
+        {
+            if (currentValue == checkVallue)
+                this->RecursionPredicty(pNode->PTrueChildren, xMatrix, idx, yVector);
+            else
+                this->RecursionPredicty(pNode->PFalseChildren, xMatrix, idx, yVector);
+        }
+        else if (pNode->FeatureDis == DT_FEATURE_CONTINUUM)
+        {
+            if (currentValue >= checkVallue)
+                this->RecursionPredicty(pNode->PTrueChildren, xMatrix, idx, yVector);
+            else
+                this->RecursionPredicty(pNode->PFalseChildren, xMatrix, idx, yVector);
+        }
+
+
+    }
+
+    /// @brief 递归打印树
+    void RecursionPrintTree(IN const CDTRegressionNode* pNode, IN string space) const
+    {
+        if (pNode == 0)
+            return;
+
+        if (pNode->PTrueChildren == nullptr &&
+            pNode->PFalseChildren == nullptr)
+        {
+            printf("{Mean: %.2f LossValue: %.2f}\n", pNode->Mean, pNode->LossValue);
+            return;
+        }
+
+        printf(" %d : %.2f ?\n", pNode->CheckColumn, pNode->CheckValue);
+
+        printf("%sTrue->  ", space.c_str());
+        this->RecursionPrintTree(pNode->PTrueChildren, space + "  ");
+        printf("%sFalse->  ", space.c_str());
+        this->RecursionPrintTree(pNode->PFalseChildren, space + "  ");
+    }
+
     /// @brief 递归构造决策树
     /// @param[in] xIdxList 样本索引列表
     /// @return 决策树节点
-    CDTRegressionNode* RecursionBuildTree(IN const vector<unsigned int>& xIdxList)
+    CDTRegressionNode* RecursionBuildTree(IN const vector<unsigned int>& xIdxList, double mean, double lossValue)
     {
+        CDTRegressionNode* pNode = new CDTRegressionNode();
+
+        // 存储当前结点的均值和损失值
+        pNode->Mean = mean;
+        pNode->LossValue = lossValue;
+
         // 如果当前损失值为0.0则生成叶子结点
-        double lossValue = this->LossValue(xIdxList);
         if (lossValue == 0.0f)
         {
-            CDTRegressionNode* pNode =  new CDTRegressionNode();
+            pNode->PTrueChildren = nullptr;
+            pNode->PFalseChildren = nullptr;
+            return pNode;
         }
 
-        double maxGain = 0.0;                // 最大信息增益
+        double minLossValue = lossValue;     // 最小损失值
         unsigned int bestCheckCol = 0;       // 最佳检查列
         double bestCheckValue;               // 最佳检查值
-        double featurDis;                    // 特征分布
+        double bestColFeaturDis;             // 最佳列特征分布
         vector<unsigned int> xBestTrueList;  // 最佳true分支样本索引列表
         vector<unsigned int> xBestFalseList; // 最佳false分支样本索引列表
+        double bestTrueMean;
+        double bestTrueLossValue;
+        double bestFalseMean;
+        double bestFalseLossValue;
 
-                                             // 针对每个列
+         // 针对每个列
         for (unsigned int col = 0; col < m_pXMatrix->ColumnLen; col++)
         {
             set<double> columnValueSet; // 列中不重复的值集合
 
-                                        // 当前列中生成一个由不同值构成的序列
+             // 当前列中生成一个由不同值构成的序列
             for (unsigned int i = 0; i < xIdxList.size(); i++)
             {
                 unsigned int idx = xIdxList[i];
@@ -724,35 +875,100 @@ private:
                 vector<unsigned int> xTrueList;  // true分支样本索引列表
                 vector<unsigned int> xFalseList; // false分支样本索引列表
                 this->DevideSample(xIdxList, col, checkValue, xTrueList, xFalseList);
+                if (xTrueList.size() == 0 ||
+                    xFalseList.size() == 0)
+                    continue;
 
-                double weight = (double)(xTrueList.size()) / (double)(xIdxList.size());
+                double trueMean;
+                double trueLossValue;
+                double falseMean;
+                double falseLossValue;
+                this->CalculateLossValue(xTrueList, trueMean, trueLossValue);
+                this->CalculateLossValue(xFalseList, falseMean, falseLossValue);
+                double sumLossValue = trueLossValue + falseLossValue;
 
-                // 计算信息增益
-                double gain = currentEntropy - weight * this->Entropy(xTrueList) - (1 - weight) * this->Entropy(xFalseList);
-                if (gain > maxGain)
+                if (sumLossValue < minLossValue)
                 {
-                    maxGain = gain;
+                    minLossValue = sumLossValue;
                     bestCheckCol = col;
                     bestCheckValue = checkValue;
-                    featurDis = (*m_pNVector)[0][col];
+                    bestColFeaturDis = (*m_pNVector)[0][col];
                     xBestTrueList = xTrueList;
                     xBestFalseList = xFalseList;
+
+                    bestTrueMean = trueMean;
+                    bestTrueLossValue = trueLossValue;
+                    bestFalseMean = falseMean;
+                    bestFalseLossValue = falseLossValue;
                 }
             }
         }
 
-        CDecisionTreeNode* pTrueChildren = this->RecursionBuildTree(xBestTrueList);
-        CDecisionTreeNode* pFalseChildren = this->RecursionBuildTree(xBestFalseList);
-        return new CDecisionTreeNode(bestCheckCol, bestCheckValue, featurDis, pTrueChildren, pFalseChildren);
+        CDTRegressionNode* pTrueChildren = this->RecursionBuildTree(xBestTrueList, bestTrueMean, bestTrueLossValue);
+        CDTRegressionNode* pFalseChildren = this->RecursionBuildTree(xBestFalseList, bestFalseMean, bestFalseLossValue);
+        pNode->PTrueChildren = pTrueChildren;
+        pNode->PFalseChildren = pFalseChildren;
+        pNode->CheckColumn = bestCheckCol;
+        pNode->CheckValue = bestCheckValue;
+        pNode->FeatureDis = bestColFeaturDis;
 
+        return pNode;
+
+    }
+
+    /// @brief 拆分样本集
+    /// @param[in] xIdxList 样本索引列表
+    /// @param[in] column 拆分依据的列
+    /// @param[in] checkValue 拆分依据的列的检查值
+    /// @param[out] xTrueList 检查结果为true的样本索引列表
+    /// @param[out] xFalseList 检查结果为false的样本索引列表
+    void DevideSample(
+        IN const vector<unsigned int>& xIdxList,
+        IN unsigned int column,
+        IN double checkValue,
+        OUT vector<unsigned int>& xTrueList,
+        OUT vector<unsigned int>& xFalseList)
+    {
+        xTrueList.clear();
+        xFalseList.clear();
+
+        if ((*m_pNVector)[0][column] == DT_FEATURE_DISCRETE)
+        {
+            for (unsigned int i = 0; i < xIdxList.size(); i++)
+            {
+                unsigned int idx = xIdxList[i];
+
+                if ((*m_pXMatrix)[idx][column] == checkValue)
+                    xTrueList.push_back(idx);
+                else
+                    xFalseList.push_back(idx);
+
+            }
+
+        }
+
+        if ((*m_pNVector)[0][column] == DT_FEATURE_CONTINUUM)
+        {
+            for (unsigned int i = 0; i < xIdxList.size(); i++)
+            {
+                unsigned int idx = xIdxList[i];
+
+                if ((*m_pXMatrix)[idx][column] >= checkValue)
+                    xTrueList.push_back(idx);
+                else
+                    xFalseList.push_back(idx);
+
+            }
+        }
     }
 
     /// @brief 计算样本损失值(二乘法)
     /// @param[in] xIdxList 样本索引列表
     /// @return 样本损失值
-    double LossValue(IN const vector<unsigned int>& xIdxList) const
+    void CalculateLossValue(IN const vector<unsigned int>& xIdxList, OUT double& mean, OUT double& lossValue) const
     {
-        double mean = 0.0;
+        mean = 0.0;
+        lossValue = 0.0;
 
         for (auto iter = xIdxList.begin(); iter != xIdxList.end(); iter++)
         {
@@ -762,16 +978,12 @@ private:
 
         mean = mean / (double)xIdxList.size();
 
-
-        double sum = 0.0;
         for (auto iter = xIdxList.begin(); iter != xIdxList.end(); iter++)
         {
             unsigned int idx = *iter;
             double dif = (*m_pYVector)[idx][0] - mean;
-            sum += dif * dif;
+            lossValue += dif * dif;
         }
-
-        return sum;
     }
 
 private:
