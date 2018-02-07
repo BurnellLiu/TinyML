@@ -56,7 +56,7 @@ void TestDecisionTreeRegression()
     printf("Decision Tree Regression Model Train:\n");
     dtReg.TrainModel(xMatrix, nVector, yVector);
     double score = dtReg.Score(xMatrix, yVector);
-    printf("Model Score: %.2f:\n", score);
+    printf("Model Score: %.2f\n", score);
 }
 
 

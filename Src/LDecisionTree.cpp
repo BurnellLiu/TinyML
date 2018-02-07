@@ -665,6 +665,32 @@ public:
         vector<CDTRegressionNode*> nodeList;
         this->RecursionEnumInsideNodeLRD(m_pRootNode, nodeList);
 
+        double minAlpha = -1.0;
+        CDTRegressionNode* pPruneNode = nullptr;
+        for (auto iter = nodeList.begin(); iter != nodeList.end(); iter++)
+        {
+            lossValue = 0.0;
+            unsigned int leafCount = 0;
+            this->RecursionCalculateSubTreeLossValue(*iter, lossValue, leafCount);
+            double alpha = ((*iter)->LossValue - lossValue) / (leafCount - 1);
+            if (minAlpha == -1.0)
+            {
+                minAlpha = alpha;
+                pPruneNode = *iter;
+            }
+
+            if (alpha < minAlpha)
+            {
+                minAlpha = alpha;
+                pPruneNode = *iter;
+            }
+        }
+        this->RecursionDeleteTree(pPruneNode->PTrueChildren);
+        this->RecursionDeleteTree(pPruneNode->PFalseChildren);
+        pPruneNode->PTrueChildren = nullptr;
+        pPruneNode->PFalseChildren = nullptr;
+
+
         m_pXMatrix = nullptr;
         m_pYVector = nullptr;
         m_pNVector = nullptr;
@@ -734,8 +760,28 @@ public:
     }
 
 private:
+    /// @brief 递归计算子树损失值
+    void RecursionCalculateSubTreeLossValue(IN CDTRegressionNode* pNode, OUT double& lossValue, OUT unsigned int& leafCount)
+    {
+        if (pNode == nullptr)
+            return;
+
+        if (pNode->PTrueChildren != 0)
+            this->RecursionCalculateSubTreeLossValue(pNode->PTrueChildren, lossValue, leafCount);
+        if (pNode->PFalseChildren != 0)
+            this->RecursionCalculateSubTreeLossValue(pNode->PFalseChildren, lossValue, leafCount);
+
+        if (pNode->PTrueChildren == nullptr &&
+            pNode->PFalseChildren == nullptr)
+        {
+            lossValue += pNode->LossValue;
+            leafCount += 1;
+        }
+
+    }
+
     /// @brief 后序遍历内部结点
-    void RecursionEnumInsideNodeLRD(CDTRegressionNode* pNode, vector<CDTRegressionNode*> nodeList)
+    void RecursionEnumInsideNodeLRD(CDTRegressionNode* pNode, OUT vector<CDTRegressionNode*>& nodeList)
     {
         if (pNode == nullptr)
             return;
@@ -745,7 +791,8 @@ private:
         if (pNode->PFalseChildren != 0)
             this->RecursionEnumInsideNodeLRD(pNode->PFalseChildren, nodeList);
 
-        if (pNode->PTrueChildren != nullptr && pNode->PFalseChildren != nullptr)
+        if (pNode->PTrueChildren != nullptr && 
+            pNode->PFalseChildren != nullptr)
             nodeList.push_back(pNode);
 
     }
