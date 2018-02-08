@@ -197,3 +197,34 @@ void DoubleMatrixShuffle(IN unsigned int seed, INOUT LDoubleMatrix& dataMatrix)
 
     }
 }
+
+void DoubleMatrixShuffle(IN unsigned int seed, INOUT LDoubleMatrix& dataMatrixA, INOUT LDoubleMatrix& dataMatrixB)
+{
+    if (dataMatrixA.RowLen != dataMatrixB.RowLen)
+        return;
+
+
+    // 设置随机种子
+    srand(seed);
+
+    /// 每次从未处理的数据中随机取出一个数字，然后把该数字放在数组的尾部，即数组尾部存放的是已经处理过的数字
+    for (int i = 0; i < (int)dataMatrixA.RowLen; i++)
+    {
+        int k = RandInt(0, i);
+
+        for (int j = 0; j < (int)dataMatrixA.ColumnLen; j++)
+        {
+            double t = dataMatrixA[k][j];
+            dataMatrixA[k][j] = dataMatrixA[i][j];
+            dataMatrixA[i][j] = t;
+        }
+
+        for (int j = 0; j < (int)dataMatrixB.ColumnLen; j++)
+        {
+
+            double t = dataMatrixB[k][j];
+            dataMatrixB[k][j] = dataMatrixB[i][j];
+            dataMatrixB[i][j] = t;
+        }
+    }
+}

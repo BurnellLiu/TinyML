@@ -50,5 +50,11 @@ private:
 /// @param[inout] dataMatrix 需要洗牌的矩阵
 void DoubleMatrixShuffle(IN unsigned int seed, INOUT LDoubleMatrix& dataMatrix);
 
+/// @brief 同时两个矩阵进行洗牌(随机打乱各个行)
+/// 要求两个矩阵具有相同的行数, 洗牌后两个矩阵行对应关系没变
+/// @param[in] seed 随机数种子
+/// @param[inout] dataMatrix 需要洗牌的矩阵
+void DoubleMatrixShuffle(IN unsigned int seed, INOUT LDoubleMatrix& dataMatrixA, INOUT LDoubleMatrix& dataMatrixB);
+
 
 #endif
