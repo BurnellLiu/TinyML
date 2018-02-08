@@ -597,6 +597,126 @@ struct CDTRegressionNode
     double LossValue;                   ///< 该结点的损失值
 };
 
+/// @brief 复制回归树
+/// @param[in] pNode 需要复制的树结点
+/// @return 复制后的新结点
+CDTRegressionNode* RegressionTreeCopy(IN const CDTRegressionNode* pNode)
+{
+    if (pNode == nullptr)
+        return nullptr;
+
+    CDTRegressionNode* pNewNode = new CDTRegressionNode();
+    (*pNewNode) = (*pNode);
+
+    pNewNode->PTrueChildren = nullptr;
+    pNewNode->PFalseChildren = nullptr;
+
+    pNewNode->PTrueChildren = RegressionTreeCopy(pNode->PTrueChildren);
+    pNewNode->PFalseChildren = RegressionTreeCopy(pNode->PFalseChildren);
+
+    return pNewNode;
+
+}
+
+/// @brief 回归树损失值
+/// @param[in] pNode 需要计算损失值的结点
+/// @param[out] lossValue 存储损失值
+/// @param[out] leafCount 存储叶子结点数量
+void RegressionTreeLossValue(IN CDTRegressionNode* pNode, OUT double& lossValue, OUT unsigned int& leafCount)
+{
+    if (pNode == nullptr)
+        return;
+
+    if (pNode->PTrueChildren != nullptr)
+        RegressionTreeLossValue(pNode->PTrueChildren, lossValue, leafCount);
+    if (pNode->PFalseChildren != nullptr)
+        RegressionTreeLossValue(pNode->PFalseChildren, lossValue, leafCount);
+
+    if (pNode->PTrueChildren == nullptr &&
+        pNode->PFalseChildren == nullptr)
+    {
+        lossValue += pNode->LossValue;
+        leafCount += 1;
+    }
+
+}
+
+/// @brief 后序遍历内部结点
+/// @param[in] pNode 需要遍历的结点
+/// @param[out] nodeList 存储内部结点
+void RegressionTreeInsideNodes(IN CDTRegressionNode* pNode, OUT vector<CDTRegressionNode*>& nodeList)
+{
+    if (pNode == nullptr)
+        return;
+
+    if (pNode->PTrueChildren != nullptr)
+        RegressionTreeInsideNodes(pNode->PTrueChildren, nodeList);
+    if (pNode->PFalseChildren != nullptr)
+        RegressionTreeInsideNodes(pNode->PFalseChildren, nodeList);
+
+    if (pNode->PTrueChildren != nullptr &&
+        pNode->PFalseChildren != nullptr)
+        nodeList.push_back(pNode);
+
+}
+
+/// @brief 回归树预测
+/// @param[in] pNode 预测结点
+/// @param[in] xMatrix 需要预测的样本矩阵
+/// @param[in] idx 需要预测的样本索引
+/// @param[out] yVector 存储预测结果
+void RegressionTreePredicty(
+    IN CDTRegressionNode* pNode,
+    IN const LDTMatrix& xMatrix,
+    IN unsigned int idx,
+    OUT LDTMatrix& yVector)
+{
+    if (pNode == nullptr)
+        return;
+
+    // 叶子结点
+    if (pNode->PTrueChildren == nullptr &&
+        pNode->PFalseChildren == nullptr)
+    {
+        yVector[idx][0] = pNode->Mean;
+        return;
+    }
+
+    // 分支结点
+    double currentValue = xMatrix[idx][pNode->CheckColumn];
+    double checkVallue = pNode->CheckValue;
+    if (pNode->FeatureDis == DT_FEATURE_DISCRETE)
+    {
+        if (currentValue == checkVallue)
+            RegressionTreePredicty(pNode->PTrueChildren, xMatrix, idx, yVector);
+        else
+            RegressionTreePredicty(pNode->PFalseChildren, xMatrix, idx, yVector);
+    }
+    else if (pNode->FeatureDis == DT_FEATURE_CONTINUUM)
+    {
+        if (currentValue >= checkVallue)
+            RegressionTreePredicty(pNode->PTrueChildren, xMatrix, idx, yVector);
+        else
+            RegressionTreePredicty(pNode->PFalseChildren, xMatrix, idx, yVector);
+    }
+}
+
+/// @brief 删除回归树
+/// @param[in] pNode 需要删除的结点
+void RegressionTreeDelete(IN CDTRegressionNode* pNode)
+{
+    if (pNode == nullptr)
+        return;
+
+    if (pNode->PTrueChildren != nullptr)
+        RegressionTreeDelete(pNode->PTrueChildren);
+    if (pNode->PFalseChildren != nullptr)
+        RegressionTreeDelete(pNode->PFalseChildren);
+
+
+    delete pNode;
+}
+
 
 /// @brief 回归树
 class CDecisionTreeRegression
@@ -639,12 +759,23 @@ public:
         // 如果已经训练过, 则删除树
         if (m_pRootNode != nullptr)
         {
-            this->RecursionDeleteTree(m_pRootNode);
+            RegressionTreeDelete(m_pRootNode);
             m_pRootNode = nullptr;
         }
 
-        m_pXMatrix = &xMatrix;
-        m_pYVector = &yVector;
+        // 将样本集拆分为训练集和验证集, 30%作为验证集
+        unsigned int verifySampleCount = (unsigned int)(xMatrix.RowLen * 0.3);
+        LDTMatrix verifyXMatrix;
+        LDTMatrix trainXMatrix;
+        xMatrix.SubMatrix(0, verifySampleCount, 0, xMatrix.ColumnLen, verifyXMatrix);
+        xMatrix.SubMatrix(verifySampleCount, xMatrix.RowLen - verifySampleCount, 0, xMatrix.ColumnLen, trainXMatrix);
+        LDTMatrix verifyYVector;
+        LDTMatrix trainYVector;
+        yVector.SubMatrix(0, verifySampleCount, 0, yVector.ColumnLen, verifyYVector);
+        yVector.SubMatrix(verifySampleCount, yVector.RowLen - verifySampleCount, 0, yVector.ColumnLen, trainYVector);
+
+        m_pXMatrix = &trainXMatrix;
+        m_pYVector = &trainYVector;
         m_pNVector = &nVector;
         m_featureNum = xMatrix.ColumnLen;
 
@@ -660,36 +791,94 @@ public:
         double lossValue = 0.0;
         double mean = 0.0;
         this->CalculateLossValue(xIdxList, mean, lossValue);
-        m_pRootNode = RecursionBuildTree(xIdxList, mean, lossValue);
+        CDTRegressionNode* pTree = RecursionBuildTree(xIdxList, mean, lossValue);
 
-        vector<CDTRegressionNode*> nodeList;
-        this->RecursionEnumInsideNodeLRD(m_pRootNode, nodeList);
+        // 剪枝后的树列表
+        vector<CDTRegressionNode*> treeList;
 
-        double minAlpha = -1.0;
-        CDTRegressionNode* pPruneNode = nullptr;
-        for (auto iter = nodeList.begin(); iter != nodeList.end(); iter++)
+        while (true)
         {
-            lossValue = 0.0;
-            unsigned int leafCount = 0;
-            this->RecursionCalculateSubTreeLossValue(*iter, lossValue, leafCount);
-            double alpha = ((*iter)->LossValue - lossValue) / (leafCount - 1);
-            if (minAlpha == -1.0)
+            // 复制树并且保存起来
+            CDTRegressionNode* pNewTree = RegressionTreeCopy(pTree);
+            treeList.push_back(pNewTree);
+
+            // 如果树被剪枝只剩根结点则退出
+            if (pTree->PTrueChildren == nullptr &&
+                pTree->PFalseChildren == nullptr)
             {
-                minAlpha = alpha;
-                pPruneNode = *iter;
+                break;
             }
 
-            if (alpha < minAlpha)
+            // 获取树所有内部结点
+            vector<CDTRegressionNode*> nodeList;
+            RegressionTreeInsideNodes(pTree, nodeList);
+
+            // 针对每个结点计算对该结点进行剪枝后整个树损失函数减少的程度
+            // 选择树损失函数减少的最小的结点进行剪枝
+            double minAlpha = -1.0;
+            CDTRegressionNode* pPruneNode = nullptr;
+            for (auto iter = nodeList.begin(); iter != nodeList.end(); iter++)
             {
-                minAlpha = alpha;
-                pPruneNode = *iter;
+                lossValue = 0.0;
+                unsigned int leafCount = 0;
+                RegressionTreeLossValue(*iter, lossValue, leafCount);
+                double alpha = ((*iter)->LossValue - lossValue) / (leafCount - 1);
+                if (minAlpha == -1.0)
+                {
+                    minAlpha = alpha;
+                    pPruneNode = *iter;
+                }
+
+                if (alpha < minAlpha)
+                {
+                    minAlpha = alpha;
+                    pPruneNode = *iter;
+                }
             }
+
+            // 进行剪枝
+            RegressionTreeDelete(pPruneNode->PTrueChildren);
+            RegressionTreeDelete(pPruneNode->PFalseChildren);
+            pPruneNode->PTrueChildren = nullptr;
+            pPruneNode->PFalseChildren = nullptr;
         }
-        this->RecursionDeleteTree(pPruneNode->PTrueChildren);
-        this->RecursionDeleteTree(pPruneNode->PFalseChildren);
-        pPruneNode->PTrueChildren = nullptr;
-        pPruneNode->PFalseChildren = nullptr;
 
+        double minErrorSum = -1.0;
+        CDTRegressionNode* pBestTree = nullptr;
+        for (auto iter = treeList.begin(); iter != treeList.end(); iter++)
+        {
+            double errorSum = 0.0;
+            LDTMatrix predictY(verifyYVector.RowLen, 1, 0.0);
+            for (unsigned int i = 0; i < verifyXMatrix.RowLen; i++)
+            {
+                RegressionTreePredicty(*iter, verifyXMatrix, i, predictY);
+                double dif = verifyYVector[i][0] - predictY[i][0];
+                errorSum += dif * dif;
+            }
+
+            if (minErrorSum == -1.0)
+            {
+                minErrorSum = errorSum;
+                pBestTree = *iter;
+                continue;
+            }
+
+            if (errorSum < minErrorSum)
+            {
+//                 RegressionTreeDelete(pBestTree);
+//                 pBestTree = nullptr;
+
+                minErrorSum = errorSum;
+                pBestTree = *iter;
+            }
+            else
+            {
+/*                RegressionTreeDelete(*iter);*/
+            }
+            
+        }
+
+        m_pRootNode = pBestTree;
 
         m_pXMatrix = nullptr;
         m_pYVector = nullptr;
@@ -713,7 +902,7 @@ public:
 
         for (unsigned int i = 0; i < xMatrix.RowLen; i++)
         {
-            this->RecursionPredicty(m_pRootNode, xMatrix, i, yVector);
+            RegressionTreePredicty(m_pRootNode, xMatrix, i, yVector);
         }
 
         return true;
@@ -760,96 +949,8 @@ public:
     }
 
 private:
-    /// @brief 递归计算子树损失值
-    void RecursionCalculateSubTreeLossValue(IN CDTRegressionNode* pNode, OUT double& lossValue, OUT unsigned int& leafCount)
-    {
-        if (pNode == nullptr)
-            return;
 
-        if (pNode->PTrueChildren != 0)
-            this->RecursionCalculateSubTreeLossValue(pNode->PTrueChildren, lossValue, leafCount);
-        if (pNode->PFalseChildren != 0)
-            this->RecursionCalculateSubTreeLossValue(pNode->PFalseChildren, lossValue, leafCount);
-
-        if (pNode->PTrueChildren == nullptr &&
-            pNode->PFalseChildren == nullptr)
-        {
-            lossValue += pNode->LossValue;
-            leafCount += 1;
-        }
-
-    }
-
-    /// @brief 后序遍历内部结点
-    void RecursionEnumInsideNodeLRD(CDTRegressionNode* pNode, OUT vector<CDTRegressionNode*>& nodeList)
-    {
-        if (pNode == nullptr)
-            return;
-
-        if (pNode->PTrueChildren != 0)
-            this->RecursionEnumInsideNodeLRD(pNode->PTrueChildren, nodeList);
-        if (pNode->PFalseChildren != 0)
-            this->RecursionEnumInsideNodeLRD(pNode->PFalseChildren, nodeList);
-
-        if (pNode->PTrueChildren != nullptr && 
-            pNode->PFalseChildren != nullptr)
-            nodeList.push_back(pNode);
-
-    }
-
-    /// @brief 递归删除决策树
-    void RecursionDeleteTree(CDTRegressionNode* pNode)
-    {
-        if (pNode == nullptr)
-            return;
-
-        if (pNode->PTrueChildren != 0)
-            this->RecursionDeleteTree(pNode->PTrueChildren);
-        if (pNode->PFalseChildren != 0)
-            this->RecursionDeleteTree(pNode->PFalseChildren);
-
-
-        delete pNode;
-    }
-
-    /// @brief 递归预测数据
-    void RecursionPredicty(
-        IN CDTRegressionNode* pNode,
-        IN const LDTMatrix& xMatrix,
-        IN unsigned int idx,
-        OUT LDTMatrix& yVector) const
-    {
-        if (pNode == nullptr)
-            return;
-
-        // 叶子结点
-        if (pNode->PTrueChildren == nullptr &&
-            pNode->PFalseChildren == nullptr)
-        {
-            yVector[idx][0] = pNode->Mean;
-            return;
-        }
-
-        // 分支结点
-        double currentValue = xMatrix[idx][pNode->CheckColumn];
-        double checkVallue = pNode->CheckValue;
-        if (pNode->FeatureDis == DT_FEATURE_DISCRETE)
-        {
-            if (currentValue == checkVallue)
-                this->RecursionPredicty(pNode->PTrueChildren, xMatrix, idx, yVector);
-            else
-                this->RecursionPredicty(pNode->PFalseChildren, xMatrix, idx, yVector);
-        }
-        else if (pNode->FeatureDis == DT_FEATURE_CONTINUUM)
-        {
-            if (currentValue >= checkVallue)
-                this->RecursionPredicty(pNode->PTrueChildren, xMatrix, idx, yVector);
-            else
-                this->RecursionPredicty(pNode->PFalseChildren, xMatrix, idx, yVector);
-        }
-
-
-    }
+    
 
     /// @brief 递归打印树
     void RecursionPrintTree(IN const CDTRegressionNode* pNode, IN string space) const

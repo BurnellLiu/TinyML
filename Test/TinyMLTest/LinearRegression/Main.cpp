@@ -40,7 +40,7 @@ void TestLinearRegression()
 
     printf("Linear Regression Model Train:\n");
     // 训练模型
-    // 计算每一次训练后的损失值
+    // 计算每一次训练后的得分
     for (unsigned int i = 0; i < 500; i++)
     {
         linearReg.TrainModel(xMatrix, yVector, 0.004f);

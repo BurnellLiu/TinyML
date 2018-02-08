@@ -83,6 +83,7 @@ public:
 
     /// @brief 训练模型
     /// 每使用一次该方法, 则生成一个新的模型
+    /// 请保持样本数据足够混乱, 因为回归树会连续抽取一部分样本作为验证集进行剪枝操作
     /// @param[in] xMatrix 样本矩阵, 每一行代表一个样本, 每一列代表样本的一个特征
     /// @param[in] nVector 样本特征分布向量(行向量), 每一列代表一个特征的分布, 值只能为DT_FEATURE_DISCRETE和DT_FEATURE_CONTINUUM
     /// @param[in] yVector 样本目标向量(列向量), 每一行代表一个样本
