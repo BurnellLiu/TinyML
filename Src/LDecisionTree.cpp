@@ -600,7 +600,7 @@ struct CDTRegressionNode
 /// @brief 复制回归树
 /// @param[in] pNode 需要复制的树结点
 /// @return 复制后的新结点
-CDTRegressionNode* RegressionTreeCopy(IN const CDTRegressionNode* pNode)
+static CDTRegressionNode* RegressionTreeCopy(IN const CDTRegressionNode* pNode)
 {
     if (pNode == nullptr)
         return nullptr;
@@ -622,7 +622,7 @@ CDTRegressionNode* RegressionTreeCopy(IN const CDTRegressionNode* pNode)
 /// @param[in] pNode 需要计算损失值的结点
 /// @param[out] lossValue 存储损失值
 /// @param[out] leafCount 存储叶子结点数量
-void RegressionTreeLossValue(IN CDTRegressionNode* pNode, OUT double& lossValue, OUT unsigned int& leafCount)
+static void RegressionTreeLossValue(IN CDTRegressionNode* pNode, OUT double& lossValue, OUT unsigned int& leafCount)
 {
     if (pNode == nullptr)
         return;
@@ -644,7 +644,7 @@ void RegressionTreeLossValue(IN CDTRegressionNode* pNode, OUT double& lossValue,
 /// @brief 后序遍历内部结点
 /// @param[in] pNode 需要遍历的结点
 /// @param[out] nodeList 存储内部结点
-void RegressionTreeInsideNodes(IN CDTRegressionNode* pNode, OUT vector<CDTRegressionNode*>& nodeList)
+static void RegressionTreeInsideNodes(IN CDTRegressionNode* pNode, OUT vector<CDTRegressionNode*>& nodeList)
 {
     if (pNode == nullptr)
         return;
@@ -665,7 +665,7 @@ void RegressionTreeInsideNodes(IN CDTRegressionNode* pNode, OUT vector<CDTRegres
 /// @param[in] xMatrix 需要预测的样本矩阵
 /// @param[in] idx 需要预测的样本索引
 /// @param[out] yVector 存储预测结果
-void RegressionTreePredicty(
+static void RegressionTreePredicty(
     IN CDTRegressionNode* pNode,
     IN const LDTMatrix& xMatrix,
     IN unsigned int idx,
@@ -703,7 +703,7 @@ void RegressionTreePredicty(
 
 /// @brief 删除回归树
 /// @param[in] pNode 需要删除的结点
-void RegressionTreeDelete(IN CDTRegressionNode* pNode)
+static void RegressionTreeDelete(IN CDTRegressionNode* pNode)
 {
     if (pNode == nullptr)
         return;
@@ -717,6 +717,27 @@ void RegressionTreeDelete(IN CDTRegressionNode* pNode)
     delete pNode;
 }
 
+/// @brief 打印回归树
+static void RegressionTreePrint(IN const CDTRegressionNode* pNode, IN string space)
+{
+    if (pNode == nullptr)
+        return;
+
+    if (pNode->PTrueChildren == nullptr &&
+        pNode->PFalseChildren == nullptr)
+    {
+        printf("{Mean: %.2f LossValue: %.2f}\n", pNode->Mean, pNode->LossValue);
+        return;
+    }
+
+    printf(" %d : %.2f ?\n", pNode->CheckColumn, pNode->CheckValue);
+
+    printf("%sTrue->  ", space.c_str());
+    RegressionTreePrint(pNode->PTrueChildren, space + "  ");
+    printf("%sFalse->  ", space.c_str());
+    RegressionTreePrint(pNode->PFalseChildren, space + "  ");
+}
+
 
 /// @brief 回归树
 class CDecisionTreeRegression
@@ -725,13 +746,21 @@ public:
     /// @brief 构造函数
     CDecisionTreeRegression()
     {
+        m_pXMatrix = nullptr;
+        m_pNVector = nullptr;
+        m_pYVector = nullptr;
 
+        m_pRootNode = nullptr;
     }
 
     /// @brief 析构函数
     ~CDecisionTreeRegression()
     {
-
+        if (m_pRootNode != nullptr)
+        {
+            RegressionTreeDelete(m_pRootNode);
+            m_pRootNode = nullptr;
+        }
     }
 
     /// @brief 训练模型
@@ -787,7 +816,7 @@ public:
             xIdxList.push_back(i);
         }
 
-        // 递归建树
+        // 建一个尽量大的树
         double lossValue = 0.0;
         double mean = 0.0;
         this->CalculateLossValue(xIdxList, mean, lossValue);
@@ -823,10 +852,12 @@ public:
                 unsigned int leafCount = 0;
                 RegressionTreeLossValue(*iter, lossValue, leafCount);
                 double alpha = ((*iter)->LossValue - lossValue) / (leafCount - 1);
+                
                 if (minAlpha == -1.0)
                 {
                     minAlpha = alpha;
                     pPruneNode = *iter;
+                    continue;
                 }
 
                 if (alpha < minAlpha)
@@ -843,6 +874,7 @@ public:
             pPruneNode->PFalseChildren = nullptr;
         }
 
+        // 使用验证集在被剪枝的树中选择一个最优的
         double minErrorSum = -1.0;
         CDTRegressionNode* pBestTree = nullptr;
         for (auto iter = treeList.begin(); iter != treeList.end(); iter++)
@@ -865,16 +897,20 @@ public:
 
             if (errorSum < minErrorSum)
             {
-//                 RegressionTreeDelete(pBestTree);
-//                 pBestTree = nullptr;
+                // 删除被抛弃的树
+                RegressionTreeDelete(pBestTree);
+                pBestTree = nullptr;
 
                 minErrorSum = errorSum;
                 pBestTree = *iter;
             }
             else
             {
-/*                RegressionTreeDelete(*iter);*/
+                // 删除被抛弃的树
+                RegressionTreeDelete(*iter);
             }
+
+            *iter = nullptr;
             
         }
 
@@ -943,36 +979,12 @@ public:
     /// @brief 打印树, 用于调试
     void PrintTree() const
     {
-        printf("DecisionTreeRegression: \n");
-        this->RecursionPrintTree(m_pRootNode, "  ");
+        printf("Regression Tree: \n");
+        RegressionTreePrint(m_pRootNode, "  ");
         printf("\n");
     }
 
 private:
-
-    
-
-    /// @brief 递归打印树
-    void RecursionPrintTree(IN const CDTRegressionNode* pNode, IN string space) const
-    {
-        if (pNode == 0)
-            return;
-
-        if (pNode->PTrueChildren == nullptr &&
-            pNode->PFalseChildren == nullptr)
-        {
-            printf("{Mean: %.2f LossValue: %.2f}\n", pNode->Mean, pNode->LossValue);
-            return;
-        }
-
-        printf(" %d : %.2f ?\n", pNode->CheckColumn, pNode->CheckValue);
-
-        printf("%sTrue->  ", space.c_str());
-        this->RecursionPrintTree(pNode->PTrueChildren, space + "  ");
-        printf("%sFalse->  ", space.c_str());
-        this->RecursionPrintTree(pNode->PFalseChildren, space + "  ");
-    }
-
     /// @brief 递归构造决策树
     /// @param[in] xIdxList 样本索引列表
     /// @return 决策树节点

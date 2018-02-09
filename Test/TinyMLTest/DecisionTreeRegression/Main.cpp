@@ -36,15 +36,15 @@ void TestDecisionTreeRegression()
     DoubleMatrixShuffle(0, xMatrix, yVector);
 
     // 将样本集拆分为训练集和验证集, 20%作为验证集
-//     unsigned int verifySampleCount = (unsigned int)(xMatrix.RowLen * 0.2);
-//     LDTMatrix verifyXMatrix;
-//     LDTMatrix trainXMatrix;
-//     xMatrix.SubMatrix(0, verifySampleCount, 0, xMatrix.ColumnLen, verifyXMatrix);
-//     xMatrix.SubMatrix(verifySampleCount, xMatrix.RowLen - verifySampleCount, 0, xMatrix.ColumnLen, trainXMatrix);
-//     LDTMatrix verifyYVector;
-//     LDTMatrix trainYVector;
-//     yVector.SubMatrix(0, verifySampleCount, 0, yVector.ColumnLen, verifyYVector);
-//     yVector.SubMatrix(verifySampleCount, yVector.RowLen - verifySampleCount, 0, yVector.ColumnLen, trainYVector);
+    unsigned int verifySampleCount = (unsigned int)(xMatrix.RowLen * 0.2);
+    LDTMatrix verifyXMatrix;
+    LDTMatrix trainXMatrix;
+    xMatrix.SubMatrix(0, verifySampleCount, 0, xMatrix.ColumnLen, verifyXMatrix);
+    xMatrix.SubMatrix(verifySampleCount, xMatrix.RowLen - verifySampleCount, 0, xMatrix.ColumnLen, trainXMatrix);
+    LDTMatrix verifyYVector;
+    LDTMatrix trainYVector;
+    yVector.SubMatrix(0, verifySampleCount, 0, yVector.ColumnLen, verifyYVector);
+    yVector.SubMatrix(verifySampleCount, yVector.RowLen - verifySampleCount, 0, yVector.ColumnLen, trainYVector);
 
     // 定义特征值分布向量
     double featureN[10] =
@@ -64,19 +64,13 @@ void TestDecisionTreeRegression()
 
 
     // 定义线性回归对象
-    LDecisionTreeRegression dtReg;
+    LDecisionTreeRegression treeReggression;
 
-    printf("Decision Tree Regression Model Train:\n");
-    dtReg.TrainModel(xMatrix, nVector, yVector);
-    dtReg.PrintTree();
+    printf("Regression Tree Model Train:\n");
+    treeReggression.TrainModel(trainXMatrix, nVector, trainYVector);
+    treeReggression.PrintTree();
 
-    //LDTMatrix predictY;
-    //dtReg.Predict(verifyXMatrix, predictY);
-
-    //MatrixPrint(verifyYVector);
-   // MatrixPrint(predictY);
-
-    double score = dtReg.Score(xMatrix, yVector);
+    double score = treeReggression.Score(verifyXMatrix, verifyYVector);
     printf("Model Score: %.2f\n", score);
 }
 
