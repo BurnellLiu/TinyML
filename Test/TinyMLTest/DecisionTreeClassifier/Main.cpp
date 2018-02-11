@@ -66,7 +66,7 @@ int main()
     // 使用训练集训练模型
     LDecisionTreeClassifier clf;
     clf.TrainModel(trainXMatrix, nVector, trainYVector);
-    clf.Prune(0.25);
+    //clf.Prune(0.25);
     clf.PrintTree();
 
     // 使用测试集计算模型得分

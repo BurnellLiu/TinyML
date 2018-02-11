@@ -12,50 +12,161 @@ using std::set;
 using std::map;
 
 
-/// @brief决策树节点
-struct CDecisionTreeNode
+/// @brief 分类树节点
+struct CDTClassifierNode
 {
-    /// @brief 默认构造函数
-    CDecisionTreeNode()
-    {
-        PTrueChildren = nullptr;
-        PFalseChildren = nullptr;
-    }
-
-    /// @brief 构造分支结点
-    CDecisionTreeNode(
-        IN int column,
-        IN double checkValue,
-        IN double featureDis,
-        IN CDecisionTreeNode* pTrueChildren,
-        IN CDecisionTreeNode* pFalseChildren)
-    {
-        CheckColumn = column;
-        CheckValue = checkValue;
-        FeatureDis = featureDis;
-
-        PTrueChildren = pTrueChildren;
-        PFalseChildren = pFalseChildren;
-    }
-
-    /// @brief 构造叶子结点
-    CDecisionTreeNode(IN const map<double, int>& labelMap)
-    {
-        PTrueChildren = nullptr;
-        PFalseChildren = nullptr;
-
-        LabelMap = labelMap;
-    }
-
     unsigned int CheckColumn;           ///< 需要检验的列索引
     double CheckValue;                  ///< 检验值, 为了使结果为true, 当前列必须匹配的值(如果是离散值则必须相等才为true, 如果是连续值则大于等于为true)
-    double FeatureDis;                 ///< 特征分布, 可以为DT_FEATURE_DISCRETE或DT_FEATURE_CONTINUUM
+    double FeatureDis;                  ///< 特征分布, 可以为DT_FEATURE_DISCRETE或DT_FEATURE_CONTINUUM
 
-    CDecisionTreeNode* PTrueChildren;  ///< 条件为true的分支结点
-    CDecisionTreeNode* PFalseChildren; ///< 条件为false的分支结点
+    CDTClassifierNode* PTrueChildren;   ///< 条件为true的分支结点, 叶子结点该值为nullptr
+    CDTClassifierNode* PFalseChildren;  ///< 条件为false的分支结点, 叶子结点该值为nullptr
 
-    map<double, int> LabelMap;         ///< 标签表<标签值, 值数量>, 叶子结点的该属性才有意义
+    map<double, int> LabelMap;          ///< 标签表<标签值, 值数量>
 };
+
+/// @brief 复制分类树
+/// @param[in] pNode 需要复制的树结点
+/// @return 复制后的新结点
+static CDTClassifierNode* ClassifierTreeCopy(IN const CDTClassifierNode* pNode)
+{
+    if (pNode == nullptr)
+        return nullptr;
+
+    CDTClassifierNode* pNewNode = new CDTClassifierNode();
+    (*pNewNode) = (*pNode);
+
+    pNewNode->PTrueChildren = nullptr;
+    pNewNode->PFalseChildren = nullptr;
+
+    pNewNode->PTrueChildren = ClassifierTreeCopy(pNode->PTrueChildren);
+    pNewNode->PFalseChildren = ClassifierTreeCopy(pNode->PFalseChildren);
+
+    return pNewNode;
+
+}
+
+/// @brief 分类树损失值
+/// @param[in] pNode 需要计算损失值的结点
+/// @param[out] lossValue 存储损失值
+/// @param[out] leafCount 存储叶子结点数量
+static void ClassifierTreeLossValue(IN CDTClassifierNode* pNode, OUT double& lossValue, OUT unsigned int& leafCount)
+{
+    if (pNode == nullptr)
+        return;
+
+    if (pNode->PTrueChildren != nullptr)
+        ClassifierTreeLossValue(pNode->PTrueChildren, lossValue, leafCount);
+    if (pNode->PFalseChildren != nullptr)
+        ClassifierTreeLossValue(pNode->PFalseChildren, lossValue, leafCount);
+
+    if (pNode->PTrueChildren == nullptr &&
+        pNode->PFalseChildren == nullptr)
+    {
+        // lossValue += pNode->LossValue;
+        leafCount += 1;
+    }
+
+}
+
+/// @brief 后序遍历分类树内部结点
+/// @param[in] pNode 需要遍历的结点
+/// @param[out] nodeList 存储内部结点
+static void ClassifierTreeInsideNodes(IN CDTClassifierNode* pNode, OUT vector<CDTClassifierNode*>& nodeList)
+{
+    if (pNode == nullptr)
+        return;
+
+    if (pNode->PTrueChildren != nullptr)
+        ClassifierTreeInsideNodes(pNode->PTrueChildren, nodeList);
+    if (pNode->PFalseChildren != nullptr)
+        ClassifierTreeInsideNodes(pNode->PFalseChildren, nodeList);
+
+    if (pNode->PTrueChildren != nullptr &&
+        pNode->PFalseChildren != nullptr)
+        nodeList.push_back(pNode);
+
+}
+
+/// @brief 分类树预测
+/// @param[in] pNode 预测结点
+/// @param[in] xMatrix 需要预测的样本矩阵
+/// @param[in] idx 需要预测的样本索引
+/// @param[out] yVector 存储预测结果
+static void ClassifierTreePredicty(
+    IN CDTRegressionNode* pNode,
+    IN const LDTMatrix& xMatrix,
+    IN unsigned int idx,
+    OUT LDTMatrix& yVector)
+{
+    if (pNode == nullptr)
+        return;
+
+    // 叶子结点
+    if (pNode->PTrueChildren == nullptr &&
+        pNode->PFalseChildren == nullptr)
+    {
+        yVector[idx][0] = pNode->Mean;
+        return;
+    }
+
+    // 分支结点
+    double currentValue = xMatrix[idx][pNode->CheckColumn];
+    double checkVallue = pNode->CheckValue;
+    if (pNode->FeatureDis == DT_FEATURE_DISCRETE)
+    {
+        if (currentValue == checkVallue)
+            RegressionTreePredicty(pNode->PTrueChildren, xMatrix, idx, yVector);
+        else
+            RegressionTreePredicty(pNode->PFalseChildren, xMatrix, idx, yVector);
+    }
+    else if (pNode->FeatureDis == DT_FEATURE_CONTINUUM)
+    {
+        if (currentValue >= checkVallue)
+            RegressionTreePredicty(pNode->PTrueChildren, xMatrix, idx, yVector);
+        else
+            RegressionTreePredicty(pNode->PFalseChildren, xMatrix, idx, yVector);
+    }
+}
+
+/// @brief 删除分类树
+/// @param[in] pNode 需要删除的结点
+static void ClassifierTreeDelete(IN CDTClassifierNode* pNode)
+{
+    if (pNode == nullptr)
+        return;
+
+    if (pNode->PFalseChildren != nullptr)
+        ClassifierTreeDelete(pNode->PFalseChildren);
+    if (pNode->PTrueChildren != nullptr)
+        ClassifierTreeDelete(pNode->PTrueChildren);
+
+    delete pNode;
+}
+
+/// @brief 打印回归树
+static void ClassifierTreePrint(IN const CDTRegressionNode* pNode, IN string space)
+{
+    if (pNode == nullptr)
+        return;
+
+    if (pNode->PTrueChildren == nullptr &&
+        pNode->PFalseChildren == nullptr)
+    {
+        printf("{Mean: %.2f LossValue: %.2f}\n", pNode->Mean, pNode->LossValue);
+        return;
+    }
+
+    printf(" %d : %.2f ?\n", pNode->CheckColumn, pNode->CheckValue);
+
+    printf("%sTrue->  ", space.c_str());
+    RegressionTreePrint(pNode->PTrueChildren, space + "  ");
+    printf("%sFalse->  ", space.c_str());
+    RegressionTreePrint(pNode->PFalseChildren, space + "  ");
+}
+
+
+
 
 
 /// @brief 决策树分类器
@@ -77,7 +188,7 @@ public:
     {
         if (m_pRootNode != nullptr)
         {
-            this->RecursionDeleteTree(m_pRootNode);
+            ClassifierTreeDelete(m_pRootNode);
             m_pRootNode = nullptr;
         }
     }
@@ -107,7 +218,7 @@ public:
         // 如果已经训练过, 则删除树
         if (m_pRootNode != nullptr)
         {
-            this->RecursionDeleteTree(m_pRootNode);
+            ClassifierTreeDelete(m_pRootNode);
             m_pRootNode = nullptr;
         }
 
@@ -209,12 +320,13 @@ public:
 
 private:
     /// @brief 递归打印树
-    void RecursionPrintTree(IN const CDecisionTreeNode* pNode, IN string space)
+    void RecursionPrintTree(IN const CDTClassifierNode* pNode, IN string space)
     {
         if (pNode == 0)
             return;
 
-        if (pNode->LabelMap.size() > 0)
+        if (pNode->PTrueChildren == nullptr &&
+            pNode->PFalseChildren == nullptr)
         {
             printf("{");
             for (auto iter = pNode->LabelMap.begin(); iter != pNode->LabelMap.end(); iter++)
@@ -234,7 +346,7 @@ private:
     }
 
     /// @brief 递归剪枝
-    void RecursionPrune(IN CDecisionTreeNode* pNode, IN double minGain)
+    void RecursionPrune(IN CDTClassifierNode* pNode, IN double minGain)
     {
         if (pNode == 0)
             return;
@@ -243,8 +355,8 @@ private:
         if (pNode->LabelMap.size() != 0)
             return;
 
-        CDecisionTreeNode* pTrueChildren = pNode->PTrueChildren;
-        CDecisionTreeNode* pFalseChildren = pNode->PFalseChildren;
+        CDTClassifierNode* pTrueChildren = pNode->PTrueChildren;
+        CDTClassifierNode* pFalseChildren = pNode->PFalseChildren;
 
         // true分支不是叶子节点
         if (pTrueChildren->LabelMap.size() == 0)
@@ -274,9 +386,9 @@ private:
             }
 
             int totalCount = trueCount + falseCount;
-            double gain = this->Entropy(totalMap) - 
-                (double)(trueCount) / (double)(totalCount) * Entropy(pTrueChildren->LabelMap) - 
-                (double)(falseCount) / (double)(totalCount) * Entropy(pFalseChildren->LabelMap);
+            double gain = this->Gini(totalMap) - 
+                (double)(trueCount) / (double)(totalCount) * Gini(pTrueChildren->LabelMap) - 
+                (double)(falseCount) / (double)(totalCount) * Gini(pFalseChildren->LabelMap);
 
             if (gain < minGain)
             {
@@ -291,7 +403,7 @@ private:
 
     /// @brief 递归预测数据
     void RecursionPredicty(
-        IN CDecisionTreeNode* pNode, 
+        IN CDTClassifierNode* pNode, 
         IN const LDTMatrix& xMatrix, 
         IN unsigned int idx, 
         OUT LDTMatrix& yVector) const
@@ -300,7 +412,8 @@ private:
             return;
 
         // 叶子结点, 则计算各个标签的概率
-        if (pNode->LabelMap.size() != 0)
+        if (pNode->PTrueChildren == nullptr &&
+            pNode->PFalseChildren == nullptr)
         {
             int totalCount = 0;
             double maxProb = 0.0;
@@ -343,33 +456,23 @@ private:
 
     }
 
-    /// @brief 递归删除决策树
-    void RecursionDeleteTree(CDecisionTreeNode* pNode)
-    {
-        if (pNode == 0)
-            return;
 
-        if (pNode->PFalseChildren != 0)
-            this->RecursionDeleteTree(pNode->PFalseChildren);
-        if (pNode->PTrueChildren != 0)
-            this->RecursionDeleteTree(pNode->PTrueChildren);
-
-        delete pNode;
-    }
 
     /// @brief 递归构造决策树
     /// @param[in] xIdxList 样本索引列表
     /// @return 决策树节点
-    CDecisionTreeNode* RecursionBuildTree(IN const vector<unsigned int>& xIdxList)
+    CDTClassifierNode* RecursionBuildTree(IN const vector<unsigned int>& xIdxList)
     {
-        // 如果当前熵为0.0则生成叶子结点
-        double currentEntropy = this->Entropy(xIdxList);
-        if (currentEntropy == 0.0f)
-        {
+        CDTClassifierNode* pNewNode = new CDTClassifierNode();
 
-            map<double, int> labelMap;
-            this->CountLabel(xIdxList, labelMap);
-            return new CDecisionTreeNode(labelMap);
+        // 如果当前基尼指数为0.0则生成叶子结点
+        map<double, int> labelMap;
+        double currentGini = this->Gini(xIdxList, pNewNode->LabelMap);
+        if (currentGini == 0.0)
+        {
+            pNewNode->PFalseChildren = nullptr;
+            pNewNode->PTrueChildren = nullptr;
+            return pNewNode;
         }
 
         double maxGain = 0.0;                // 最大信息增益
@@ -403,7 +506,12 @@ private:
                 double weight = (double)(xTrueList.size()) / (double)(xIdxList.size());
 
                 // 计算信息增益
-                double gain = currentEntropy - weight * this->Entropy(xTrueList) - (1 - weight) * this->Entropy(xFalseList);
+                map<double, int> trueLabelMap;
+                map<double, int> falseLabelMap;
+                double gain = 
+                    currentGini - 
+                    weight * this->Gini(xTrueList, trueLabelMap) - 
+                    (1 - weight) * this->Gini(xFalseList, falseLabelMap);
                 if (gain > maxGain)
                 {
                     maxGain = gain;
@@ -416,9 +524,16 @@ private:
             }
         }
 
-        CDecisionTreeNode* pTrueChildren = this->RecursionBuildTree(xBestTrueList);
-        CDecisionTreeNode* pFalseChildren = this->RecursionBuildTree(xBestFalseList);
-        return new CDecisionTreeNode(bestCheckCol, bestCheckValue, featurDis, pTrueChildren, pFalseChildren);
+        CDTClassifierNode* pTrueChildren = this->RecursionBuildTree(xBestTrueList);
+        CDTClassifierNode* pFalseChildren = this->RecursionBuildTree(xBestFalseList);
+
+        pNewNode->CheckColumn = bestCheckCol;
+        pNewNode->CheckValue = bestCheckValue;
+        pNewNode->FeatureDis = featurDis;
+        pNewNode->PTrueChildren = pTrueChildren;
+        pNewNode->PFalseChildren = pFalseChildren;
+
+        return pNewNode;
 
     }
 
@@ -484,34 +599,34 @@ private:
     }
 
 
-    /// @brief 计算样本集类别的熵
-    /// 对于任意一个随机变量 X, 它的熵定义如下:
-    /// 变量的不确定性越大, 熵也就越大, 把它搞清楚所需要的信息量也就越大
+    /// @brief 计算样本集基尼指数
     /// @param[in] xIdxList 样本索引列表
-    /// @return 样本集类别熵
-    double Entropy(IN const vector<unsigned int>& xIdxList)
+    /// @param[out] labelMap 存储标签表
+    /// @return 样本集基尼指数
+    double Gini(IN const vector<unsigned int>& xIdxList, OUT map<double, int>& labelMap)
     {
-        double entropy = 0.0f;
-        map<double, int> typeCountMap;
+        labelMap.clear();
+
+        double gini = 1.0;
         for (unsigned int i = 0; i < xIdxList.size(); i++)
         {
             unsigned int idx = xIdxList[i];
-            ++typeCountMap[(*m_pYVector)[idx][0]];
+            ++labelMap[(*m_pYVector)[idx][0]];
         }
 
-        for (auto iter = typeCountMap.begin(); iter != typeCountMap.end(); iter++)
+        for (auto iter = labelMap.begin(); iter != labelMap.end(); iter++)
         {
             double prob = (double)(iter->second) / (double)(xIdxList.size());
-            entropy -= prob * log(prob) / log(2.0);
+            gini -= prob * prob;
         }
 
-        return entropy;
+        return gini;
     }
 
-    /// @brief 根据标签表计算熵
-    double Entropy(IN const map<double, int>& labelMap)
+    /// @brief 根据标签表计算基尼指数
+    double Gini(IN const map<double, int>& labelMap)
     {
-        double entropy = 0.0f;
+        double gini = 1.0;
 
         int totalCount = 0;
         for (auto iter = labelMap.begin(); iter != labelMap.end(); iter++)
@@ -522,10 +637,10 @@ private:
         for (auto iter = labelMap.begin(); iter != labelMap.end(); iter++)
         {
             double prob = (double)(iter->second) / (double)(totalCount);
-            entropy -= prob * log(prob) / log(2.0);
+            gini -= prob * prob;
         }
 
-        return entropy;
+        return gini;
     }
 
 
@@ -536,7 +651,7 @@ private:
 
     unsigned int m_featureNum;      ///< 特征数
 
-    CDecisionTreeNode* m_pRootNode; ///< 决策树根结点
+    CDTClassifierNode* m_pRootNode; ///< 决策树根结点
     
 };
 
