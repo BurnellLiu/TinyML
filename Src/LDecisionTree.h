@@ -23,7 +23,7 @@ typedef LMatrix<double> LDTMatrix;     ///< 决策树矩阵
 #endif
 
 
-class CDecisionTreeClassifier;
+class CDecisionTree;
 
 /// @brief 分类树
 class LDecisionTreeClassifier
@@ -43,12 +43,6 @@ public:
     /// @return 成功返回true, 失败返回false(参数错误的情况下会返回失败)
     bool TrainModel(IN const LDTMatrix& xMatrix, IN const LDTMatrix& nVector, IN const LDTMatrix& yVector);
 
-    /// @brief 进行剪枝操作(即合并叶子节点)
-    /// 剪枝可以防止模型过拟合
-    /// 如果两个叶子节点合并后增加的熵小于指定的最小值, 则进行合并操作
-    /// @param[in] minGain 最小增加值
-    void Prune(IN double minGain);
-
     /// @brief 使用训练好的模型预测数据
     /// @param[in] xMatrix 需要预测的样本矩阵
     /// @param[out] yVector 存储预测的标签向量(列向量)
@@ -65,11 +59,11 @@ public:
     void PrintTree();
 
 private:
-    CDecisionTreeClassifier* m_pClassifier; ///< 分类树实现对象
+    CDecisionTree* m_pClassifier; ///< 分类树实现对象
 };
 
 
-class CDecisionTreeRegression;
+
 
 /// @brief 回归树
 class LDecisionTreeRegression
@@ -106,7 +100,7 @@ public:
     void PrintTree() const;
 
 private:
-    CDecisionTreeRegression* m_pRegressor; ///< 回归树实现对象
+    CDecisionTree* m_pRegressor; ///< 回归树实现对象
 };
 
 
