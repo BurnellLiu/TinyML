@@ -174,540 +174,6 @@ static void DecisionTreePrint(IN const CDecisionTreeNode* pNode, IN string space
     DecisionTreePrint(pNode->PFalseChildren, space + "  ");
 }
 
-// 
-// /// @brief 决策树分类器
-// class CDecisionTreeClassifier
-// {
-// public:
-//     /// @brief 构造函数
-//     CDecisionTreeClassifier()
-//     {
-//         m_pXMatrix = nullptr;
-//         m_pYVector = nullptr;
-//         m_pNVector = nullptr;
-// 
-//         m_pRootNode = nullptr;
-//     }
-// 
-//     /// @brief 析构造函数
-//     ~CDecisionTreeClassifier()
-//     {
-//         if (m_pRootNode != nullptr)
-//         {
-//             DecisionTreeDelete(m_pRootNode);
-//             m_pRootNode = nullptr;
-//         }
-//     }
-// 
-//     /// @brief 训练模型
-//     bool TrainModel(IN const LDTMatrix& xMatrix, IN const LDTMatrix& nVector, IN const LDTMatrix& yVector)
-//     {
-//         // 检查参数
-//         if (xMatrix.RowLen < 1)
-//             return false;
-//         if (xMatrix.ColumnLen < 1)
-//             return false;
-//         if (nVector.RowLen != 1)
-//             return false;
-//         if (nVector.ColumnLen != xMatrix.ColumnLen)
-//             return false;
-//         if (yVector.ColumnLen != 1)
-//             return false;
-//         if (yVector.RowLen != xMatrix.RowLen)
-//             return false;
-//         for (unsigned int i = 0; i < nVector.ColumnLen; i++)
-//         {
-//             if (nVector[0][i] != DT_FEATURE_DISCRETE && nVector[0][i] != DT_FEATURE_CONTINUUM)
-//                 return false;
-//         }
-// 
-//         // 如果已经训练过, 则删除树
-//         if (m_pRootNode != nullptr)
-//         {
-//             DecisionTreeDelete(m_pRootNode);
-//             m_pRootNode = nullptr;
-//         }
-// 
-//         m_pXMatrix = &xMatrix;
-//         m_pYVector = &yVector;
-//         m_pNVector = &nVector;
-//         m_featureNum = xMatrix.ColumnLen;
-//         
-//         // 提取样本标签
-//         vector<unsigned int> xIdxList;
-//         xIdxList.reserve(m_pXMatrix->RowLen);
-//         for (unsigned int i = 0; i < m_pXMatrix->RowLen; i++)
-//         {
-//             xIdxList.push_back(i);
-//         }
-// 
-//         // 递归建树, 建一个尽量大的树
-//         double lossValue = 0.0;
-//         double targetValue = 0.0;
-//         this->CalculateLossValue(xIdxList, targetValue, lossValue);
-// 
-//         m_pRootNode = RecursionBuildTree(xIdxList, targetValue, lossValue);
-// 
-//         m_pXMatrix = nullptr;
-//         m_pYVector = nullptr;
-//         m_pNVector = nullptr;
-// 
-//         return true;
-// 
-//     }
-// 
-//     /// @brief 进行剪枝操作(即合并叶子节点)
-//     void Prune(IN double minGain)
-//     {
-//         if (nullptr == m_pRootNode)
-//             return;
-//         if (minGain < 0.0)
-//             return;
-// 
-//         this->RecursionPrune(m_pRootNode, minGain);
-// 
-//     }
-// 
-//     /// @brief 使用训练好的模型预测数据
-//     bool Predict(IN const LDTMatrix& xMatrix, OUT LDTMatrix& yVector) const
-//     {
-//         // 检查参数
-//         if (nullptr == m_pRootNode)
-//             return false;
-//         if (xMatrix.RowLen < 1)
-//             return false;
-//         if (xMatrix.ColumnLen != m_featureNum)
-//             return false;
-// 
-//         yVector.Reset(xMatrix.RowLen, 1, 0.0);
-// 
-//         for (unsigned int i = 0; i < xMatrix.RowLen; i++)
-//         {
-//             this->RecursionPredicty(m_pRootNode, xMatrix, i, yVector);
-//         }
-// 
-//         return true;
-//         
-//     }
-// 
-//     /// @brief 计算模型得分
-//     double Score(IN const LDTMatrix& xMatrix, IN const LDTMatrix& yVector) const
-//     {
-//         // 检查参数
-//         if (nullptr == m_pRootNode)
-//             return -1.0;
-//         if (xMatrix.RowLen < 1)
-//             return -1.0;
-//         if (xMatrix.ColumnLen != m_featureNum)
-//             return -1.0;
-//         if (yVector.ColumnLen != 1)
-//             return -1.0;
-//         if (yVector.RowLen != xMatrix.RowLen)
-//             return -1.0;
-// 
-//         LDTMatrix predictVector;
-//         this->Predict(xMatrix, predictVector);
-//         if (predictVector.RowLen != yVector.RowLen)
-//             return -1.0;
-// 
-//         double trueCount = 0.0;
-//         for (unsigned int row = 0; row < yVector.RowLen; row++)
-//         {
-//             if (predictVector[row][0] == yVector[row][0])
-//                 trueCount += 1.0;
-//         }
-// 
-//         return trueCount / (double)yVector.RowLen;
-//     }
-// 
-//     /// @brief 打印树, 用于调试
-//     void PrintTree()
-//     {
-//         printf("DecisionTreeClassifier: \n");
-//         this->RecursionPrintTree(m_pRootNode, "  ");
-//         printf("\n");
-//     }
-// 
-// private:
-//     /// @brief 递归打印树
-//     void RecursionPrintTree(IN const CDTClassifierNode* pNode, IN string space)
-//     {
-//         if (pNode == 0)
-//             return;
-// 
-//         if (pNode->PTrueChildren == nullptr &&
-//             pNode->PFalseChildren == nullptr)
-//         {
-//             printf("{");
-//             for (auto iter = pNode->LabelMap.begin(); iter != pNode->LabelMap.end(); iter++)
-//             {
-//                 printf(" %.2f : %d;", iter->first, iter->second);
-//             }
-//             printf("}\n"); 
-//             return;
-//         }
-// 
-//         printf(" %d : %.2f ?\n", pNode->CheckColumn, pNode->CheckValue);
-// 
-//         printf("%sTrue->  ", space.c_str());
-//         this->RecursionPrintTree(pNode->PTrueChildren, space + "  ");
-//         printf("%sFalse->  ", space.c_str());
-//         this->RecursionPrintTree(pNode->PFalseChildren, space + "  ");
-//     }
-// 
-//     /// @brief 递归剪枝
-//     void RecursionPrune(IN CDTClassifierNode* pNode, IN double minGain)
-//     {
-//         if (pNode == 0)
-//             return;
-// 
-//         // 叶子结点不用剪枝
-//         if (pNode->LabelMap.size() != 0)
-//             return;
-// 
-//         CDTClassifierNode* pTrueChildren = pNode->PTrueChildren;
-//         CDTClassifierNode* pFalseChildren = pNode->PFalseChildren;
-// 
-//         // true分支不是叶子节点
-//         if (pTrueChildren->LabelMap.size() == 0)
-//             this->RecursionPrune(pTrueChildren, minGain);
-// 
-//         // false分支不是叶子节点
-//         if (pFalseChildren->LabelMap.size() == 0)
-//             this->RecursionPrune(pFalseChildren, minGain);
-// 
-//         // 两个分支都是叶子节点, 则判断是否合并
-//         if (pTrueChildren->LabelMap.size() != 0 &&
-//             pFalseChildren->LabelMap.size() != 0)
-//         {
-//             int trueCount = 0;
-//             int falseCount = 0;
-//             map<double, int> totalMap;
-//             for (auto iter = pTrueChildren->LabelMap.begin(); iter != pTrueChildren->LabelMap.end(); iter++)
-//             {
-//                 totalMap[iter->first] += iter->second;
-//                 trueCount += iter->second;
-//             }
-// 
-//             for (auto iter = pFalseChildren->LabelMap.begin(); iter != pFalseChildren->LabelMap.end(); iter++)
-//             {
-//                 totalMap[iter->first] += iter->second;
-//                 falseCount += iter->second;
-//             }
-// 
-//             int totalCount = trueCount + falseCount;
-//             double gain = this->Gini(totalMap) - 
-//                 (double)(trueCount) / (double)(totalCount) * Gini(pTrueChildren->LabelMap) - 
-//                 (double)(falseCount) / (double)(totalCount) * Gini(pFalseChildren->LabelMap);
-// 
-//             if (gain < minGain)
-//             {
-//                 pNode->LabelMap = totalMap;
-//                 delete pNode->PTrueChildren;
-//                 pNode->PTrueChildren = nullptr;
-//                 delete pNode->PFalseChildren;
-//                 pNode->PFalseChildren = nullptr;
-//             }
-//         }
-//     }
-// 
-//     /// @brief 递归预测数据
-//     void RecursionPredicty(
-//         IN CDTClassifierNode* pNode, 
-//         IN const LDTMatrix& xMatrix, 
-//         IN unsigned int idx, 
-//         OUT LDTMatrix& yVector) const
-//     {
-//         if (pNode == nullptr)
-//             return;
-// 
-//         // 叶子结点, 则计算各个标签的概率
-//         if (pNode->PTrueChildren == nullptr &&
-//             pNode->PFalseChildren == nullptr)
-//         {
-//             int totalCount = 0;
-//             double maxProb = 0.0;
-//             double label;
-//             for (auto iter = pNode->LabelMap.begin(); iter != pNode->LabelMap.end(); iter++)
-//                 totalCount += iter->second;
-//             for (auto iter = pNode->LabelMap.begin(); iter != pNode->LabelMap.end(); iter++)
-//             {
-//                 double prob = (double)(iter->second) / (double)(totalCount);
-//                 if (prob > maxProb)
-//                 {
-//                     maxProb = prob;
-//                     label = iter->first;
-//                 }
-//             }
-// 
-//             yVector[idx][0] = label;
-// 
-//             return;
-//         }
-// 
-//         // 分支结点
-//         double currentValue = xMatrix[idx][pNode->CheckColumn];
-//         double checkVallue = pNode->CheckValue;
-//         if (pNode->FeatureDis == DT_FEATURE_DISCRETE)
-//         {
-//             if (currentValue == checkVallue)
-//                 this->RecursionPredicty(pNode->PTrueChildren, xMatrix, idx, yVector);
-//             else
-//                 this->RecursionPredicty(pNode->PFalseChildren, xMatrix, idx, yVector);
-//         }
-//         else if (pNode->FeatureDis == DT_FEATURE_CONTINUUM)
-//         {
-//             if (currentValue >= checkVallue)
-//                 this->RecursionPredicty(pNode->PTrueChildren, xMatrix, idx, yVector);
-//             else
-//                 this->RecursionPredicty(pNode->PFalseChildren, xMatrix, idx, yVector);
-//         }
-// 
-// 
-//     }
-// 
-// 
-// 
-//     /// @brief 递归构造决策树
-//     /// @param[in] xIdxList 样本索引列表
-//     /// @return 决策树节点
-//     CDecisionTreeNode* RecursionBuildTree(IN const vector<unsigned int>& xIdxList, IN double targetValue, IN double lossValue)
-//     {
-//         CDecisionTreeNode* pNode = new CDecisionTreeNode();
-// 
-//         pNode->TargetValue = targetValue;
-//         pNode->LossValue = lossValue;
-//         
-// 
-//         // 如果当前损失值为0.0则生成叶子结点
-//         if (lossValue == 0.0)
-//         {
-//             pNode->PFalseChildren = nullptr;
-//             pNode->PTrueChildren = nullptr;
-// 
-//             return pNode;
-//         }
-// 
-//         double maxGain = 0.0;                // 最大信息增益
-//         unsigned int bestCheckCol = 0;       // 最佳检查列
-//         double bestCheckValue;               // 最佳检查值
-//         double featurDis;                    // 特征分布
-//         vector<unsigned int> xBestTrueList;  // 最佳true分支样本索引列表
-//         vector<unsigned int> xBestFalseList; // 最佳false分支样本索引列表
-// 
-//         // 针对每个列
-//         for (unsigned int col = 0; col < m_pXMatrix->ColumnLen; col++)
-//         {
-//             set<double> columnValueSet; // 列中不重复的值集合
-// 
-//             // 当前列中生成一个由不同值构成的序列
-//             for (unsigned int i = 0; i < xIdxList.size(); i++)
-//             {
-//                 unsigned int idx = xIdxList[i];
-// 
-//                 columnValueSet.insert((*m_pXMatrix)[idx][col]);
-//             }
-// 
-//             // 针对一个列中的每个不同值
-//             for (auto iter = columnValueSet.begin(); iter != columnValueSet.end(); iter++)
-//             {
-//                 double checkValue = *iter;       // 检查值
-//                 vector<unsigned int> xTrueList;  // true分支样本索引列表
-//                 vector<unsigned int> xFalseList; // false分支样本索引列表
-//                 this->DevideSample(xIdxList, col, checkValue, xTrueList, xFalseList);
-//                 if (xTrueList.size() == 0 ||
-//                     xFalseList.size() == 0)
-//                     continue;
-// 
-//                 double trueMean;
-//                 double trueLossValue;
-//                 double falseMean;
-//                 double falseLossValue;
-//                 this->CalculateLossValue(xTrueList, trueMean, trueLossValue);
-//                 this->CalculateLossValue(xFalseList, falseMean, falseLossValue);
-//                 double sumLossValue = trueLossValue + falseLossValue;
-// 
-//                 if (sumLossValue < minLossValue)
-//                 {
-//                     minLossValue = sumLossValue;
-//                     bestCheckCol = col;
-//                     bestCheckValue = checkValue;
-//                     bestColFeaturDis = (*m_pNVector)[0][col];
-//                     xBestTrueList = xTrueList;
-//                     xBestFalseList = xFalseList;
-// 
-//                     bestTrueMean = trueMean;
-//                     bestTrueLossValue = trueLossValue;
-//                     bestFalseMean = falseMean;
-//                     bestFalseLossValue = falseLossValue;
-//                 }
-//             }
-//         }
-// 
-//         CDTClassifierNode* pTrueChildren = this->RecursionBuildTree(xBestTrueList);
-//         CDTClassifierNode* pFalseChildren = this->RecursionBuildTree(xBestFalseList);
-// 
-//         pNode->CheckColumn = bestCheckCol;
-//         pNode->CheckValue = bestCheckValue;
-//         pNode->FeatureDis = featurDis;
-//         pNode->PTrueChildren = pTrueChildren;
-//         pNode->PFalseChildren = pFalseChildren;
-// 
-//         return pNode;
-// 
-//     }
-// 
-//     /// @brief 拆分样本集
-//     /// @param[in] xIdxList 样本索引列表
-//     /// @param[in] column 拆分依据的列
-//     /// @param[in] checkValue 拆分依据的列的检查值
-//     /// @param[out] xTrueList 检查结果为true的样本索引列表
-//     /// @param[out] xFalseList 检查结果为false的样本索引列表
-//     void DevideSample(
-//         IN const vector<unsigned int>& xIdxList,
-//         IN unsigned int column, 
-//         IN double checkValue,
-//         OUT vector<unsigned int>& xTrueList,
-//         OUT vector<unsigned int>& xFalseList)
-//     {
-//         xTrueList.clear();
-//         xFalseList.clear();
-// 
-//         if ((*m_pNVector)[0][column] == DT_FEATURE_DISCRETE)
-//         {
-//             for (unsigned int i = 0; i < xIdxList.size(); i++)
-//             {
-//                 unsigned int idx = xIdxList[i];
-// 
-//                 if ((*m_pXMatrix)[idx][column] == checkValue)
-//                     xTrueList.push_back(idx);
-//                 else
-//                     xFalseList.push_back(idx);
-// 
-//             }
-//             
-//         }
-//         
-//         if ((*m_pNVector)[0][column] == DT_FEATURE_CONTINUUM)
-//         {
-//             for (unsigned int i = 0; i < xIdxList.size(); i++)
-//             {
-//                 unsigned int idx = xIdxList[i];
-// 
-//                 if ((*m_pXMatrix)[idx][column] >= checkValue)
-//                     xTrueList.push_back(idx);
-//                 else
-//                     xFalseList.push_back(idx);
-// 
-//             }
-//         }
-//     }
-// 
-//     /// @brief 统计标签
-//     /// @param[in] xIdxList 样本索引列表
-//     /// @param[out] labelMap 标签表
-//     void CountLabel(IN const vector<unsigned int>& xIdxList, OUT map<double, int>& labelMap)
-//     {
-//         labelMap.clear();
-// 
-//         for (unsigned int i = 0; i < xIdxList.size(); i++)
-//         {
-//             unsigned int idx = xIdxList[i];
-// 
-//             ++labelMap[(*m_pYVector)[idx][0]];
-//         }
-//     }
-// 
-// 
-//     /// @brief 计算损失值(基尼指数)
-//     /// @param[in] xIdxList 样本索引列表
-//     /// @param[out] targetValue 目标值
-//     /// @param[out] lossValue 损失值
-//     /// @return 计算损失值(基尼指数)
-//     void CalculateLossValue(IN const vector<unsigned int>& xIdxList, OUT double& targetValue, OUT double& lossValue) const
-//     {
-//         map<double, int> labelMap;
-// 
-//         for (unsigned int i = 0; i < xIdxList.size(); i++)
-//         {
-//             unsigned int idx = xIdxList[i];
-//             ++labelMap[(*m_pYVector)[idx][0]];
-//         }
-// 
-//         double gini = 1.0;
-//         unsigned int maxLabelCount = 0;
-//         for (auto iter = labelMap.begin(); iter != labelMap.end(); iter++)
-//         {
-//             double prob = (double)(iter->second) / (double)(xIdxList.size());
-//             gini -= prob * prob;
-// 
-//             if (iter->second > maxLabelCount)
-//             {
-//                 maxLabelCount = iter->second;
-//                 targetValue = iter->first;
-//             }
-//         }
-// 
-//         lossValue = gini * xIdxList.size();
-//     }
-// 
-// 
-// private:
-//     const LDTMatrix* m_pXMatrix;    ///< 样本矩阵, 训练时所用临时变量
-//     const LDTMatrix* m_pYVector;    ///< 标签向量(列向量), 训练时所用临时变量
-//     const LDTMatrix* m_pNVector;    ///< 特征分布向量(行向量), 训练时所用临时变量
-// 
-//     unsigned int m_featureNum;      ///< 特征数
-// 
-//     CDecisionTreeNode* m_pRootNode; ///< 决策树根结点
-//     
-// };
-// 
-// LDecisionTreeClassifier::LDecisionTreeClassifier()
-// {
-//     m_pClassifier = nullptr;
-//     m_pClassifier = new CDecisionTreeClassifier();
-// }
-// 
-// LDecisionTreeClassifier::~LDecisionTreeClassifier()
-// {
-//     if (m_pClassifier != nullptr)
-//     {
-//         delete m_pClassifier;
-//         m_pClassifier = nullptr;
-//     }
-// }
-// 
-// bool LDecisionTreeClassifier::TrainModel(IN const LDTMatrix& xMatrix, IN const LDTMatrix& nVector, IN const LDTMatrix& yVector)
-// {
-//     return m_pClassifier->TrainModel(xMatrix, nVector, yVector);
-// }
-// 
-// void LDecisionTreeClassifier::Prune(IN double minGain)
-// {
-//     m_pClassifier->Prune(minGain);
-// }
-// 
-// bool LDecisionTreeClassifier::Predict(IN const LDTMatrix& xMatrix, OUT LDTMatrix& yVector) const
-// {
-//     return m_pClassifier->Predict(xMatrix, yVector);
-// }
-// 
-// double LDecisionTreeClassifier::Score(IN const LDTMatrix& xMatrix, IN const LDTMatrix& yVector) const
-// {
-//     return m_pClassifier->Score(xMatrix, yVector);
-// }
-// 
-// 
-// 
-// void LDecisionTreeClassifier::PrintTree()
-// {
-//     m_pClassifier->PrintTree();
-// }
-
-
-
-
 
 /// @brief 决策树
 class CDecisionTree
@@ -808,6 +274,8 @@ public:
             if (pTree->PTrueChildren == nullptr &&
                 pTree->PFalseChildren == nullptr)
             {
+                DecisionTreeDelete(pTree);
+                pTree = nullptr;
                 break;
             }
 
@@ -857,8 +325,18 @@ public:
             for (unsigned int i = 0; i < verifyXMatrix.RowLen; i++)
             {
                 DecisionTreePredicty(*iter, verifyXMatrix, i, predictY);
-                double dif = verifyYVector[i][0] - predictY[i][0];
-                errorSum += dif * dif;
+
+                if (m_treeType == REGRESSION_TREE)
+                {
+                    double dif = verifyYVector[i][0] - predictY[i][0];
+                    errorSum += dif * dif;
+                }
+                else if (m_treeType == CLASSIFIER_TREE)
+                {
+                    if (verifyYVector[i][0] != predictY[i][0])
+                        errorSum += 1;
+                }
+
             }
 
             if (minErrorSum == -1.0)
@@ -921,9 +399,11 @@ public:
     double Score(IN const LDTMatrix& xMatrix, IN const LDTMatrix& yVector) const
     {
         if (m_treeType == REGRESSION_TREE)
-        {
             return this->ScoreRSquare(xMatrix, yVector);
-        }
+        else if (m_treeType == CLASSIFIER_TREE)
+            return this->ScoreAccuracy(xMatrix, yVector);
+
+        return 0.0;
     }
 
 
@@ -940,12 +420,12 @@ private:
     /// @brief 递归构造决策树
     /// @param[in] xIdxList 样本索引列表
     /// @return 决策树节点
-    CDecisionTreeNode* RecursionBuildTree(IN const vector<unsigned int>& xIdxList, double mean, double lossValue)
+    CDecisionTreeNode* RecursionBuildTree(IN const vector<unsigned int>& xIdxList, double targetValue, double lossValue)
     {
         CDecisionTreeNode* pNode = new CDecisionTreeNode();
 
-        // 存储当前结点的均值和损失值
-        pNode->TargetValue = mean;
+        // 存储当前结点的目标值和损失值
+        pNode->TargetValue = targetValue;
         pNode->LossValue = lossValue;
 
         // 如果当前损失值为0.0则生成叶子结点
@@ -962,9 +442,9 @@ private:
         double bestColFeaturDis;             // 最佳列特征分布
         vector<unsigned int> xBestTrueList;  // 最佳true分支样本索引列表
         vector<unsigned int> xBestFalseList; // 最佳false分支样本索引列表
-        double bestTrueMean;
+        double bestTrueTargetValue;
         double bestTrueLossValue;
-        double bestFalseMean;
+        double bestFalseTargetValue;
         double bestFalseLossValue;
 
          // 针对每个列
@@ -1008,16 +488,16 @@ private:
                     xBestTrueList = xTrueList;
                     xBestFalseList = xFalseList;
 
-                    bestTrueMean = trueMean;
+                    bestTrueTargetValue = trueMean;
                     bestTrueLossValue = trueLossValue;
-                    bestFalseMean = falseMean;
+                    bestFalseTargetValue = falseMean;
                     bestFalseLossValue = falseLossValue;
                 }
             }
         }
 
-        CDecisionTreeNode* pTrueChildren = this->RecursionBuildTree(xBestTrueList, bestTrueMean, bestTrueLossValue);
-        CDecisionTreeNode* pFalseChildren = this->RecursionBuildTree(xBestFalseList, bestFalseMean, bestFalseLossValue);
+        CDecisionTreeNode* pTrueChildren = this->RecursionBuildTree(xBestTrueList, bestTrueTargetValue, bestTrueLossValue);
+        CDecisionTreeNode* pFalseChildren = this->RecursionBuildTree(xBestFalseList, bestFalseTargetValue, bestFalseLossValue);
         pNode->PTrueChildren = pTrueChildren;
         pNode->PFalseChildren = pFalseChildren;
         pNode->CheckColumn = bestCheckCol;
@@ -1074,38 +554,94 @@ private:
         }
     }
 
+    /// @brief 计算样本损失值
+    /// @param[in] xIdxList 样本索引列表
+    /// @param[out] targetValue 目标值
+    /// @param[out] lossValue 损失值
+    /// @return 样本损失值
+    void CalculateLossValue(IN const vector<unsigned int>& xIdxList, OUT double& targetValue, OUT double& lossValue) const
+    {
+        if (m_treeType == CLASSIFIER_TREE)
+            this->CalculateLossValueGini(xIdxList, targetValue, lossValue);
+        else if (m_treeType == REGRESSION_TREE)
+            this->CalculateLossValueSquare(xIdxList, targetValue, lossValue);
+    }
+
     /// @brief 计算样本损失值(二乘法)
     /// @param[in] xIdxList 样本索引列表
+    /// @param[out] targetMean 目标均值
+    /// @param[out] lossValue 损失值
     /// @return 样本损失值
-    void CalculateLossValue(IN const vector<unsigned int>& xIdxList, OUT double& mean, OUT double& lossValue) const
+    void CalculateLossValueSquare(IN const vector<unsigned int>& xIdxList, OUT double& targetMean, OUT double& lossValue) const
     {
-        mean = 0.0;
+        targetMean = 0.0;
         lossValue = 0.0;
 
         for (auto iter = xIdxList.begin(); iter != xIdxList.end(); iter++)
         {
             unsigned int idx = *iter;
-            mean += (*m_pYVector)[idx][0];
+            targetMean += (*m_pYVector)[idx][0];
         }
 
-        mean = mean / (double)xIdxList.size();
+        targetMean = targetMean / (double)xIdxList.size();
 
         for (auto iter = xIdxList.begin(); iter != xIdxList.end(); iter++)
         {
             unsigned int idx = *iter;
-            double dif = (*m_pYVector)[idx][0] - mean;
+            double dif = (*m_pYVector)[idx][0] - targetMean;
             lossValue += dif * dif;
         }
     }
 
+     /// @brief 计算损失值(基尼指数)
+     /// @param[in] xIdxList 样本索引列表
+     /// @param[out] targetLabel 目标标签
+     /// @param[out] lossValue 损失值
+     /// @return 计算损失值(基尼指数)
+     void CalculateLossValueGini(IN const vector<unsigned int>& xIdxList, OUT double& targetLabel, OUT double& lossValue) const
+     {
+         map<double, int> labelMap;
+     
+         for (unsigned int i = 0; i < xIdxList.size(); i++)
+         {
+             unsigned int idx = xIdxList[i];
+             ++labelMap[(*m_pYVector)[idx][0]];
+         }
+     
+         double gini = 1.0;
+         int maxLabelCount = 0;
+         for (auto iter = labelMap.begin(); iter != labelMap.end(); iter++)
+         {
+             double prob = (double)(iter->second) / (double)(xIdxList.size());
+             gini -= prob * prob;
+     
+             if (iter->second > maxLabelCount)
+             {
+                 maxLabelCount = iter->second;
+                 targetLabel = iter->first;
+             }
+         }
+     
+         lossValue = gini * xIdxList.size();
+     }
+
     /// @brief 计算模型得分(相关指数R^2)
     double ScoreRSquare(IN const LDTMatrix& xMatrix, IN const LDTMatrix& yVector) const
     {
-        LDTMatrix predictY;
-        bool bRet = this->Predict(xMatrix, predictY);
-        if (!bRet)
+        // 检查参数
+        if (nullptr == m_pRootNode)
+            return 2.0;
+        if (xMatrix.RowLen < 1)
+            return 2.0;
+        if (xMatrix.ColumnLen != m_featureNum)
+            return 2.0;
+        if (yVector.ColumnLen != 1)
+            return 2.0;
+        if (yVector.RowLen != xMatrix.RowLen)
             return 2.0;
 
+        LDTMatrix predictY;
+        this->Predict(xMatrix, predictY);
 
         double sumY = 0.0;
         for (unsigned int i = 0; i < yVector.RowLen; i++)
@@ -1130,6 +666,36 @@ private:
         return score;
     }
 
+     /// @brief 计算模型得分(正确率)
+     double ScoreAccuracy(IN const LDTMatrix& xMatrix, IN const LDTMatrix& yVector) const
+     {
+         // 检查参数
+         if (nullptr == m_pRootNode)
+             return -1.0;
+         if (xMatrix.RowLen < 1)
+             return -1.0;
+         if (xMatrix.ColumnLen != m_featureNum)
+             return -1.0;
+         if (yVector.ColumnLen != 1)
+             return -1.0;
+         if (yVector.RowLen != xMatrix.RowLen)
+             return -1.0;
+     
+         LDTMatrix predictVector;
+         this->Predict(xMatrix, predictVector);
+         if (predictVector.RowLen != yVector.RowLen)
+             return -1.0;
+     
+         double trueCount = 0.0;
+         for (unsigned int row = 0; row < yVector.RowLen; row++)
+         {
+             if (predictVector[row][0] == yVector[row][0])
+                 trueCount += 1.0;
+         }
+     
+         return trueCount / (double)yVector.RowLen;
+     }
+
 private:
 
     const LDTMatrix* m_pXMatrix;   ///< 样本矩阵, 训练时所用临时变量
@@ -1142,6 +708,41 @@ private:
     CDecisionTreeNode* m_pRootNode; ///< 决策树根结点
 
 };
+
+LDecisionTreeClassifier::LDecisionTreeClassifier()
+{
+    m_pClassifier = nullptr;
+    m_pClassifier = new CDecisionTree(CLASSIFIER_TREE);
+}
+
+LDecisionTreeClassifier::~LDecisionTreeClassifier()
+{
+    if (m_pClassifier != nullptr)
+    {
+        delete m_pClassifier;
+        m_pClassifier = nullptr;
+    }
+}
+
+bool LDecisionTreeClassifier::TrainModel(IN const LDTMatrix& xMatrix, IN const LDTMatrix& nVector, IN const LDTMatrix& yVector)
+{
+    return m_pClassifier->TrainModel(xMatrix, nVector, yVector);
+}
+
+bool LDecisionTreeClassifier::Predict(IN const LDTMatrix& xMatrix, OUT LDTMatrix& yVector) const
+{
+    return m_pClassifier->Predict(xMatrix, yVector);
+}
+
+double LDecisionTreeClassifier::Score(IN const LDTMatrix& xMatrix, IN const LDTMatrix& yVector) const
+{
+    return m_pClassifier->Score(xMatrix, yVector);
+}
+
+void LDecisionTreeClassifier::PrintTree() const
+{
+    return m_pClassifier->PrintTree();
+}
 
 LDecisionTreeRegression::LDecisionTreeRegression()
 {

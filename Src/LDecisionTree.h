@@ -56,7 +56,7 @@ public:
     double Score(IN const LDTMatrix& xMatrix, IN const LDTMatrix& yVector) const;
 
     /// @brief 打印树, 用于调试
-    void PrintTree();
+    void PrintTree() const;
 
 private:
     CDecisionTree* m_pClassifier; ///< 分类树实现对象
