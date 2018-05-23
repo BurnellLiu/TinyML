@@ -209,6 +209,18 @@ public:
     /// @return 转置后的结果矩阵
     LMatrix<Type> T() const;
 
+    /// @brief 矩阵行拆分(拆分为两个矩阵)
+    /// @param[in] rowIdx 拆分的行索引(索引行被包含在下矩阵中)
+    /// @param[out] up 存储上矩阵
+    /// @param[out] down 存储下矩阵
+    void SplitRow(IN unsigned int rowIdx, OUT LMatrix<Type>& up, OUT LMatrix<Type>& down) const;
+
+    /// @brief 矩阵列拆分(拆分为两个矩阵)
+    /// @param[in] colIdx 拆分的列索引(索引列被包含在右矩阵中)
+    /// @param[out] left 存储左矩阵
+    /// @param[out] right 存储右矩阵
+    void SplitCloumn(IN unsigned int colIdx, OUT LMatrix<Type>& left, OUT LMatrix<Type>& right) const;
+
     /// @brief 获取子矩阵
     /// @param[in] rowStart 子矩阵开始行
     /// @param[in] rowLen 子矩阵行长度
@@ -459,6 +471,26 @@ LMatrix<Type> LMatrix<Type>::T() const
     LMatrix<Type> B;
     T(*this, B);
     return B;
+}
+
+LTEMPLATE
+void LMatrix<Type>::SplitRow(IN unsigned int rowIdx, OUT LMatrix<Type>& up, OUT LMatrix<Type>& down) const
+{
+    up.Reset(0, 0);
+    down.Reset(0, 0);
+
+    SUBMATRIX(*this, 0, rowIdx, 0, this->ColumnLen, up);
+    SUBMATRIX(*this, rowIdx, this->RowLen-rowIdx, 0, this->ColumnLen, down);
+}
+
+LTEMPLATE
+void LMatrix<Type>::SplitCloumn(IN unsigned int colIdx, OUT LMatrix<Type>& left, OUT LMatrix<Type>& right) const
+{
+    left.Reset(0, 0);
+    right.Reset(0, 0);
+
+    SUBMATRIX(*this, 0, this->RowLen, 0, colIdx, left);
+    SUBMATRIX(*this, 0, this->RowLen, colIdx, this->ColumnLen - colIdx, right);
 }
 
 LTEMPLATE
