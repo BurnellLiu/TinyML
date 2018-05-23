@@ -1,10 +1,10 @@
 ﻿/// @file LDecisionTree.h
 /// @brief  决策树头文件
 /// 
-/// Detail:该文件声明了决策树分类器
-/// @author Email:burnell_liu@outlook.com
+/// Detail:该文件声明了分类树和回归树
+/// @author Jie Liu Email:coderjie@outlook.com
 /// @version   
-/// @date 2018/01/29
+/// @date 2018/05/23
 
 #ifndef _LDECISIONTREE_H_
 #define _LDECISIONTREE_H_
@@ -61,8 +61,6 @@ public:
 private:
     CDecisionTree* m_pClassifier; ///< 分类树实现对象
 };
-
-
 
 
 /// @brief 回归树

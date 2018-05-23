@@ -2,9 +2,9 @@
 /// @brief 矩阵模板头文件
 /// 
 /// Detail:
-/// @author Burnell Liu Email:burnell_liu@outlook.com
+/// @author Jie Liu Email:coderjie@outlook.com
 /// @version   
-/// @date 2016:4:21
+/// @date 2018/05/23
 
 #ifndef _DATASTRUCT_LMATRIX_H_
 #define _DATASTRUCT_LMATRIX_H_
@@ -271,14 +271,14 @@ public:
     void Reset(IN unsigned int row, IN unsigned int col, IN const Type& initValue);
 
 public:
-    const unsigned int& RowLen; ///< 行长度属性
-    const unsigned int& ColumnLen; ///< 列长度属性
+    const unsigned int& RowLen;     ///< 行长度属性
+    const unsigned int& ColumnLen;  ///< 列长度属性
 
 private:
-    Type** m_dataTable; ///< 二维数据表
-    Type* m_dataList; ///< 实际存储的数据列表
-    unsigned int m_rowLen; ///< 矩阵行长度
-    unsigned int m_columnLen; ///< 矩阵列长度
+    Type** m_dataTable;             ///< 二维数据表
+    Type*  m_dataList;              ///< 实际存储的数据列表
+    unsigned int m_rowLen;          ///< 矩阵行长度
+    unsigned int m_columnLen;       ///< 矩阵列长度
 };
 
 LTEMPLATE
