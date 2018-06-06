@@ -35,22 +35,19 @@ int main()
 
     // 将数据集拆分为训练集和测试集, 测试集占总集合的20%
     unsigned int testSize = (unsigned int)(dataMatrix.RowLen * 0.2);
-    LDTMatrix trainData;
     LDTMatrix testData;
-    dataMatrix.SubMatrix(0, testSize, 0, dataMatrix.ColumnLen, testData);
-    dataMatrix.SubMatrix(testSize, dataMatrix.RowLen - testSize, 0, dataMatrix.ColumnLen, trainData);
+    LDTMatrix trainData;
+    dataMatrix.SplitRow(testSize, testData, trainData);
 
     // 将训练集拆分为训练样本集合和标签集
     LDTMatrix trainXMatrix;
     LDTMatrix trainYVector;
-    trainData.SubMatrix(0, trainData.RowLen, 0, trainData.ColumnLen - 1, trainXMatrix);
-    trainData.SubMatrix(0, trainData.RowLen, trainData.ColumnLen - 1, 1, trainYVector);
+    trainData.SplitCloumn(trainData.ColumnLen - 1, trainXMatrix, trainYVector);
 
     // 将测试集拆分为测试样本集合和标签集
     LDTMatrix testXMatrix;
     LDTMatrix testYVector;
-    testData.SubMatrix(0, testData.RowLen, 0, testData.ColumnLen - 1, testXMatrix);
-    testData.SubMatrix(0, testData.RowLen, testData.ColumnLen - 1, 1, testYVector);
+    testData.SplitCloumn(testData.ColumnLen - 1, testXMatrix, testYVector);
 
 
     // 定义特征值分布向量
