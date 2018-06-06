@@ -2,7 +2,7 @@
 /// @brief 本文声明了CSV文件操作类
 /// LCSVParser(CSV文件解析器)
 /// Detail:
-/// @author Jie_Liu Email:burnell_liu@outlook.com
+/// @author Jie Liu Email:coderjie@outlook.com
 /// @version   
 /// @date 2018/01/30
 

@@ -17,7 +17,7 @@
 /// 梯度下降算法: 每次训练使用所有样本集, 如果样本集很大, 则导致内存开销大, 并且训练耗时长, 优点是收敛快
 /// 随机梯度下降算法: 每次训练使用样本集中的一个样本, 缺点是收敛慢
 /// 批量梯度下降算法: 综合以上两种
-/// @author Jie_Liu Email:burnell_liu@outlook.com
+/// @author Jie Liu Email:coderjie@outlook.com
 /// @version   
 /// @date 2018/01/31
 

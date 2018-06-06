@@ -2,7 +2,7 @@
 /// @brief 本文件中声明了一些数据预处理类
 /// 
 /// Detail:
-/// @author Jie_Liu Email:burnell_liu@outlook.com
+/// @author Jie Liu Email:coderjie@outlook.com
 /// @version   
 /// @date 2018/01/31
 
