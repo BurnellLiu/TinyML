@@ -46,9 +46,9 @@ public:
     /// @brief 激活神经元
     /// @param[in] inputVector 输入向量(行向量), 向量长度必须等于神经元的输入个数
     /// @return 激活值, 激活值范围0~1
-    float Active(IN const LNNMatrix& inputVector)
+    double Active(IN const LNNMatrix& inputVector)
     {
-        float sum = 0.0f;
+        double sum = 0.0;
         for (unsigned int i = 0; i < inputVector.ColumnLen; i++)
         {
             sum += inputVector[0][i] * m_weightList[i];
@@ -66,10 +66,10 @@ public:
     /// @param[out] pFrontErrorList 存储前层输出误差列表 , 不能为0
     /// @return 成功返回true, 失败返回false, 参数有误会失败
     bool BackTrain(
-        IN const vector<float>& inputList, 
-        IN float error, 
-        IN float learnRate,
-        OUT vector<float>* pFrontErrorList)
+        IN const vector<double>& inputList, 
+        IN double error, 
+        IN double learnRate,
+        OUT vector<double>* pFrontErrorList)
     {
         if (inputList.size() != (m_weightList.size()-1))
             return false;
@@ -93,13 +93,13 @@ private:
     /// @brief S型激活函数
     /// @param[in] input 激励值
     /// @return 激活值
-    float Sigmoid(IN float input)
+    double Sigmoid(IN double input)
     {
-        return ( 1.0f / ( 1.0f + exp(-input)));
+        return ( 1.0 / ( 1.0 + exp(-input)));
     }
 
 private:
-    vector<float> m_weightList; ///< 权重列表, 权重值最后一项为偏移值
+    vector<double> m_weightList; ///< 权重列表, 权重值最后一项为偏移值
 };
 
 /// @brief BP网络中的神经元层
@@ -169,7 +169,7 @@ public:
     /// @param[in] learnRate 学习速率
     /// @param[out] pFrontOpErrorList 存储前一层的输出误差列表, 不能为0
     /// @return 成功返回true, 失败返回false, 参数有误会失败
-    bool BackTrain(IN const vector<float>& opErrorList, IN float learnRate, OUT vector<float>* pFrontOpErrorList)
+    bool BackTrain(IN const vector<double>& opErrorList, IN double learnRate, OUT vector<double>* pFrontOpErrorList)
     {
         if (opErrorList.size() != m_neuronList.size())
             return false;
@@ -207,8 +207,8 @@ public:
 private:
     unsigned int m_neuronInputNum; ///< 神经元输入个数
     vector<CBPNeuron*> m_neuronList; ///< 神经元列表
-    vector<float> m_inputList; ///< 神经元的输入值列表, 每次调用Active函数被更新
-    vector<float> m_frontErrorList; ///< 神经元前层输出误差
+    vector<double> m_inputList; ///< 神经元的输入值列表, 每次调用Active函数被更新
+    vector<double> m_frontErrorList; ///< 神经元前层输出误差
 };
 
 /// @brief BP网络实现类
@@ -262,7 +262,7 @@ public:
             this->Active(m_inputVectorForTrain, &m_outputVectorForTrain);
 
             // 计算输出层误差
-            vector<float>& errorList = m_layerErrorList[m_layerErrorList.size()-1];
+            vector<double>& errorList = m_layerErrorList[m_layerErrorList.size()-1];
             for (unsigned int i = 0; i < m_outputVectorForTrain.ColumnLen; i++)
             {
                 errorList[i] = outputMatrix[row][i]-m_outputVectorForTrain[0][i];
@@ -395,7 +395,7 @@ private:
     以下成员变量为Train或Active所用, 为了在多次调用Train或Active函数时提高程序效率
     */
     vector<LNNMatrix> m_layerOutList; ///< 神经元层输出列表
-    vector<vector<float>> m_layerErrorList; ///< 神经元层输出误差列表
+    vector<vector<double>> m_layerErrorList; ///< 神经元层输出误差列表
     LNNMatrix m_inputVectorForTrain; ///< 输入向量Train函数使用
     LNNMatrix m_outputVectorForTrain; ///< 输出向量Train函数使用
     LNNMatrix m_inputVectorForActive; ///< 输入向量Active函数使用

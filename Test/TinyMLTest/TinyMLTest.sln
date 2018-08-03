@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DecisionTreeClassifier", "D
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DecisionTreeRegression", "DecisionTreeRegression\DecisionTreeRegression.vcxproj", "{18D02F2B-644A-4714-A0C1-6E38EFDD9768}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BPNetwork", "BPNetwork\BPNetwork.vcxproj", "{878A1923-591A-4389-B84A-2F8A9F5495DB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -61,6 +63,14 @@ Global
 		{18D02F2B-644A-4714-A0C1-6E38EFDD9768}.Release|Win32.Build.0 = Release|Win32
 		{18D02F2B-644A-4714-A0C1-6E38EFDD9768}.Release|x64.ActiveCfg = Release|x64
 		{18D02F2B-644A-4714-A0C1-6E38EFDD9768}.Release|x64.Build.0 = Release|x64
+		{878A1923-591A-4389-B84A-2F8A9F5495DB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{878A1923-591A-4389-B84A-2F8A9F5495DB}.Debug|Win32.Build.0 = Debug|Win32
+		{878A1923-591A-4389-B84A-2F8A9F5495DB}.Debug|x64.ActiveCfg = Debug|x64
+		{878A1923-591A-4389-B84A-2F8A9F5495DB}.Debug|x64.Build.0 = Debug|x64
+		{878A1923-591A-4389-B84A-2F8A9F5495DB}.Release|Win32.ActiveCfg = Release|Win32
+		{878A1923-591A-4389-B84A-2F8A9F5495DB}.Release|Win32.Build.0 = Release|Win32
+		{878A1923-591A-4389-B84A-2F8A9F5495DB}.Release|x64.ActiveCfg = Release|x64
+		{878A1923-591A-4389-B84A-2F8A9F5495DB}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
