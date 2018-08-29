@@ -21,6 +21,9 @@
     <ClCompile Include="LNeuralNetwork.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GomokuControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GomokuAi.h">
@@ -31,6 +34,9 @@
     </ClInclude>
     <ClInclude Include="LMatrix.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GomokuControl.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

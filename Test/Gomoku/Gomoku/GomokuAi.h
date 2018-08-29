@@ -9,9 +9,9 @@
 #define SPOT_NONE           0.5         // 无子
 #define SPOT_BLACK          0.0         // 黑子
 
-#define GAME_WIN            1.0         // 赢棋
-#define GAME_DRAWN          0.5         // 和棋
-#define GAME_LOSE           0.0         // 输棋
+#define GAME_WIN_SCORE      1.0         // 赢棋得分
+#define GAME_DRAWN_SCORE    0.5         // 和棋得分
+#define GAME_LOSE_SCORE     0.0         // 输棋得分
 
 typedef LMatrix<double> LChessBoard;    // 棋盘
 
@@ -25,9 +25,10 @@ struct LChessPos
 /// @brief 训练数据
 struct LTrainData
 {
+    bool        GameEnd;    // 标记游戏是否结束
     LChessBoard State;      // 当前状态
     LChessPos   Action;     // 执行动作(落子位置)
-    double      Reward;     // 回报值, 1.0(白子赢), 0.5(和棋), 0.0(白子输棋)
+    double      Reward;     // 回报值(得分值), 1.0(白子赢), 0.5(和棋), 0.0(白子输棋)
     LChessBoard NextState;  // 下个状态
 };
 
