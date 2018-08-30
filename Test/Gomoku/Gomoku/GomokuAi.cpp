@@ -3,7 +3,9 @@
 #include <cmath>
 #include <cstdlib>
 #include <vector>
+#include <map>
 using std::vector;
+using std::map;
 
 #ifdef _DEBUG
 #define DebugPrint(format, ...) printf(format, __VA_ARGS__)
@@ -173,4 +175,122 @@ void LGomokuAi::Train(IN const LTrainData& data)
         m_pBrain->Train(m_trainInputCache1, m_trainoutputCache1, rate);
     }
     
+}
+
+/// @brief 训练数据池
+class CTrainDataPool
+{
+public:
+    /// @brief 构造函数
+    /// @param[in] maxSize 训练池最大数据个数
+    CTrainDataPool(unsigned int maxSize)
+    {
+        m_dataMaxSize = maxSize;
+
+        m_dataVec.resize(maxSize);
+        m_dataUsedVec.resize(maxSize);
+        for (unsigned int i = 0; i < maxSize; i++)
+        {
+            m_dataUsedVec[i] = false;
+        }
+        m_dataUsedSize = 0;
+    }
+
+    /// @brief 析构函数
+    ~CTrainDataPool()
+    {
+
+    }
+
+    /// @brief 获取数据池数据数量
+    unsigned int Size()
+    {
+        return m_dataUsedSize;
+    }
+
+    /// @brief 在数据池中创建新数据
+    /// @return 成功创建返回数据地址, 失败返回nullptr, 数据池已满会失败
+    LTrainData* NewData()
+    {
+        if (m_dataUsedSize >= m_dataMaxSize)
+            return nullptr;
+
+        // 找到一个可用空间
+        for (unsigned int i = 0; i < m_dataMaxSize; i++)
+        {
+            if (m_dataUsedVec[i] == false)
+            {
+                m_dataUsedSize += 1;
+
+                return &(m_dataVec[i]);
+            }
+        }
+        return nullptr;
+    }
+
+    /// @brief 从数据池中随机弹出一个数据
+    /// @param[out] pData 存储弹出的数据
+    /// @return 成功放入返回true, 失败返回false, 数据池为空会失败
+    bool Pop(OUT LTrainData* pData)
+    {
+        if (m_dataUsedSize < 1)
+            return false;
+        if (pData == nullptr)
+            return false;
+
+        int randCount = RandInt(1, (int)m_dataUsedSize);
+
+        int count = 0;
+        for (unsigned int i = 0; i < m_dataMaxSize; i++)
+        {
+            if (m_dataUsedVec[i] == true)
+            {
+                count += 1;
+
+                if (randCount == count)
+                {
+                    (*pData) = m_dataVec[i];
+                    break;
+                }
+            }
+        }
+
+        return true;
+    }
+
+private:
+    unsigned int m_dataMaxSize;                 // 数据池最大数据个数
+    unsigned int m_dataUsedSize;                // 记录已使用的个数
+    vector<LTrainData> m_dataVec;               // 数据池
+    vector<bool> m_dataUsedVec;                 // 标记数据池中的对应数据是否被使用
+    
+};
+
+LTrainDataPool::LTrainDataPool(unsigned int maxSize)
+{
+    m_pDataPool = new CTrainDataPool(maxSize);
+}
+
+LTrainDataPool::~LTrainDataPool()
+{
+    if (m_pDataPool != nullptr)
+    {
+        delete m_pDataPool;
+        m_pDataPool = nullptr;
+    }
+}
+
+unsigned int LTrainDataPool::Size()
+{
+    return m_pDataPool->Size();
+}
+
+LTrainData* LTrainDataPool::NewData()
+{
+    return m_pDataPool->NewData();
+}
+
+bool LTrainDataPool::Pop(OUT LTrainData* pData)
+{
+    return m_pDataPool->Pop(pData);
 }

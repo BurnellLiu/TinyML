@@ -63,3 +63,32 @@ private:
     
 };
 
+class CTrainDataPool;
+
+/// @brief 训练数据池
+class LTrainDataPool
+{
+public:
+    /// @brief 构造函数
+    /// @param[in] maxSize 训练池最大数据个数
+    LTrainDataPool(unsigned int maxSize);
+
+    /// @brief 析构函数
+    ~LTrainDataPool();
+
+    /// @brief 获取数据池数据数量
+    unsigned int Size();
+
+    /// @brief 在数据池中创建新数据
+    /// @return 成功创建返回数据地址, 失败返回nullptr, 数据池已满会失败
+    LTrainData* NewData();
+
+    /// @brief 从数据池中随机弹出一个数据
+    /// @param[out] pData 存储弹出的数据
+    /// @return 成功放入返回true, 失败返回false, 数据池为空会失败
+    bool Pop(OUT LTrainData* pData);
+
+private:
+    CTrainDataPool* m_pDataPool;            // 数据池实现对象
+};
+
