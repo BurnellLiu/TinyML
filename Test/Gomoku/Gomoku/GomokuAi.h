@@ -53,6 +53,15 @@ public:
     /// @brief 训练
     /// @param[in] data 训练数据
     void Train(IN const LTrainData& data);
+
+    /// @brief 将五子棋Ai保存到文件中
+    /// @param[in] pFilePath 文件路径
+    void Save2File(IN char* pFilePath);
+
+    /// @brief 从文件中加载五子棋Ai
+    /// @param[in] pFilePath 文件路径
+    void LoadFromFile(IN char* pFilePath);
+
 private:
     CGomokuAi* m_pGomokuAi;         // 五子棋Ai实现对象
 };

@@ -11,7 +11,7 @@ using std::map;
 #ifdef _DEBUG
 #define DebugPrint(format, ...) printf(format, __VA_ARGS__)
 #else
-#define DebugPrint(format, ...) printf(format, __VA_ARGS__)
+#define DebugPrint(format, ...) 
 #endif
 
 #define CHESSMAN_NUM CHESS_BOARD_ROW*CHESS_BOARD_COLUMN     // 棋子总数
@@ -62,7 +62,6 @@ public:
         pogology.NeuronsOfHiddenLayer = 128;
         m_pBrain = nullptr;
         m_pBrain = new LBPNetwork(pogology);
-        m_pBrain->SaveToFile(".\\Network.txt");
 
         m_inputCache.Reset(1, CHESSMAN_NUM);
         m_trainInputCache1.Reset(1, CHESSMAN_NUM);
@@ -215,6 +214,27 @@ public:
         DebugPrint("TrainValue: %f\n", m_trainOutputCache2[0][action]);
 
     }
+
+    /// @brief 将五子棋Ai保存到文件中
+    /// @param[in] pFilePath 文件路径
+    void Save2File(IN char* pFilePath)
+    {
+        m_pBrain->Save2File(pFilePath);
+    }
+
+    /// @brief 从文件中加载五子棋Ai
+    /// @param[in] pFilePath 文件路径
+    void LoadFromFile(IN char* pFilePath)
+    {
+        if (m_pBrain != nullptr)
+        {
+            delete m_pBrain;
+            m_pBrain = nullptr;
+        }
+
+        m_pBrain = new LBPNetwork(pFilePath);
+    }
+
 private:
     LBPNetwork* m_pBrain;                   // Ai的大脑
 
@@ -251,6 +271,16 @@ void LGomokuAi::Action(IN const LChessBoard& chessBoard, IN double e, OUT LChess
 void LGomokuAi::Train(IN const LTrainData& data)
 {
     m_pGomokuAi->Train(data);
+}
+
+void LGomokuAi::Save2File(IN char* pFilePath)
+{
+    m_pGomokuAi->Save2File(pFilePath);
+}
+
+void LGomokuAi::LoadFromFile(IN char* pFilePath)
+{
+    m_pGomokuAi->LoadFromFile(pFilePath);
 }
 
 /// @brief 训练数据池

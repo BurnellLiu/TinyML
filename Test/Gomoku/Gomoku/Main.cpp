@@ -199,6 +199,14 @@ int main()
     {
         DebugPrint("SelfGame%i\n", i);
 
+        // 每进行1000盘自我对弈就保存一次Ai到文件中
+        if ((i + 1) % 1000 == 0)
+        {
+            char fileBuffer[64] = { 0 };
+            sprintf_s(fileBuffer, ".\\%d-Train.bin", (i+1));
+            ai.Save2File(fileBuffer);
+        }
+
         // 重置棋盘
         chessBoardN.Reset(CHESS_BOARD_ROW, CHESS_BOARD_COLUMN, SPOT_NONE);
         chessBoardR.Reset(CHESS_BOARD_ROW, CHESS_BOARD_COLUMN, SPOT_NONE);
@@ -290,7 +298,6 @@ int main()
                     dataPool.Pop(&data);
                     ai.Train(data);
                 }
-                system("pause");
             }
 
         }
@@ -304,10 +311,12 @@ int main()
                 dataPool.Pop(&data);
                 ai.Train(data);
             }
-            system("pause");
         }
 
 
     }
+
+    DebugPrint("completed\n");
+    system("pause");
     return 0;
 }

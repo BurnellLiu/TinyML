@@ -39,6 +39,11 @@ public:
     /// @param[in] pogology BP网络拓扑结构
     explicit LBPNetwork(IN const LBPNetworkPogology& pogology);
 
+    /// @brief 构造函数
+    /// 从文件中加载神经网络
+    /// @param[in] pFilePath
+    explicit LBPNetwork(IN char* pFilePath);
+
     /// @brief 析构函数
     ~LBPNetwork();
 
@@ -60,7 +65,7 @@ public:
 
     /// @brief 将神经网络保存到文件中
     /// @param[in] pFilePath 文件路径
-    void SaveToFile(IN char* pFilePath);
+    void Save2File(IN char* pFilePath);
 
 private:
     CBPNetwork* m_pBPNetwork; ///< BP网络的实现对象

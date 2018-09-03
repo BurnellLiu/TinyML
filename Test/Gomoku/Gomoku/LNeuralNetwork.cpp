@@ -90,6 +90,24 @@ public:
 
     }
 
+    /// @brief 保存到文件中
+    void Save2File(FILE* pFile)
+    {
+        for (unsigned int i = 0; i < m_weightList.size(); i++)
+        {
+            fwrite(&m_weightList[i], sizeof(m_weightList[i]), 1, pFile);
+        }
+    }
+
+    /// @brief 从文件中加载
+    void LoadFromFile(FILE* pFile)
+    {
+        for (unsigned int i = 0; i < m_weightList.size(); i++)
+        {
+            fread(&m_weightList[i], sizeof(m_weightList[i]), 1, pFile);
+        }
+    }
+
 private:
     /// @brief S型激活函数
     /// @param[in] input 激励值
@@ -205,6 +223,24 @@ public:
 
     }
 
+    /// @brief 保存到文件中
+    void Save2File(FILE* pFile)
+    {
+        for (unsigned int i = 0; i < m_neuronList.size(); i++)
+        {
+            m_neuronList[i]->Save2File(pFile);
+        }
+    }
+
+    /// @brief 从文件中加载
+    void LoadFromFile(FILE* pFile)
+    {
+        for (unsigned int i = 0; i < m_neuronList.size(); i++)
+        {
+            m_neuronList[i]->LoadFromFile(pFile);
+        }
+    }
+
 private:
     unsigned int m_neuronInputNum; ///< 神经元输入个数
     vector<CBPNeuron*> m_neuronList; ///< 神经元列表
@@ -227,6 +263,36 @@ public:
         m_bInitDone = false;
 
         this->Init(pogology);
+    }
+
+    /// @brief 构造函数
+    /// 从文件中加载神经网络
+    CBPNetwork(IN char* pFilePath)
+    {
+        m_networkPogology.InputNumber = 0;
+        m_networkPogology.OutputNumber = 0;
+        m_networkPogology.HiddenLayerNumber = 0;
+        m_networkPogology.NeuronsOfHiddenLayer = 0;
+
+        m_bInitDone = false;
+
+        FILE* pFile = nullptr;
+        fopen_s(&pFile, pFilePath, "rb");
+        if (pFile == nullptr)
+            return;
+
+        // 在前16个字节中读入神经网络结构
+        LBPNetworkPogology pogology;
+        fread(&pogology, sizeof(pogology), 1, pFile);
+        this->Init(pogology);
+
+        for (unsigned int i = 0; i < m_layerList.size(); i++)
+        {
+            m_layerList[i]->LoadFromFile(pFile);
+        }
+
+        fclose(pFile);
+        pFile = nullptr; 
     }
 
     /// @brief 析构函数
@@ -323,26 +389,26 @@ public:
     }
 
     /// @brief 将神经网络保存到文件中
-    void SaveToFile(IN char* pFilePath)
+    void Save2File(IN char* pFilePath)
     {
         if (pFilePath == nullptr)
             return;
 
         FILE* pFile = nullptr;
-        fopen_s(&pFile, pFilePath, "w");
+        fopen_s(&pFile, pFilePath, "wb");
         if (pFile == nullptr)
             return;
-        
-        unsigned char buffer[4] = {1};
+
         // 在前16个字节中写入神经网络结构
-        //fwrite(&(m_networkPogology.InputNumber), 4, 1, pFile);
-//         fwrite(&m_networkPogology.OutputNumber, sizeof(m_networkPogology.OutputNumber), 1, pFile);
-//         fwrite(&m_networkPogology.HiddenLayerNumber, sizeof(m_networkPogology.HiddenLayerNumber), 1, pFile);
-//         fwrite(&m_networkPogology.NeuronsOfHiddenLayer, sizeof(m_networkPogology.NeuronsOfHiddenLayer), 1, pFile);
-        memcpy_s(buffer, 4, &(m_networkPogology.InputNumber), 4);
-        fwrite(buffer, 4, 1, pFile);
+        fwrite(&m_networkPogology, sizeof(m_networkPogology), 1, pFile);
+        for (unsigned int i = 0; i < m_layerList.size(); i++)
+        {
+            m_layerList[i]->Save2File(pFile);
+        }
+        
         fclose(pFile);
         pFile = nullptr;
+
     }
 
 private:
@@ -431,6 +497,11 @@ LBPNetwork::LBPNetwork(IN const LBPNetworkPogology& pogology)
     m_pBPNetwork = new CBPNetwork(pogology);
 }
 
+LBPNetwork::LBPNetwork(IN char* pFilePath)
+{
+    m_pBPNetwork = new CBPNetwork(pFilePath);
+}
+
 LBPNetwork::~LBPNetwork()
 {
     if (0 != m_pBPNetwork)
@@ -450,7 +521,7 @@ bool LBPNetwork::Active(IN const LNNMatrix& inputMatrix, OUT LNNMatrix* pOutputM
     return m_pBPNetwork->Active(inputMatrix, pOutputMatrix);
 }
 
-void LBPNetwork::SaveToFile(IN char* pFilePath)
+void LBPNetwork::Save2File(IN char* pFilePath)
 {
-    m_pBPNetwork->SaveToFile(pFilePath);
+    m_pBPNetwork->Save2File(pFilePath);
 }
