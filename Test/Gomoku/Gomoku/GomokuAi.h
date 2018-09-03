@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "LNeuralNetwork.h"
+#include "LMatrix.h"
 
 #define CHESS_BOARD_ROW     15          // 棋盘行数
 #define CHESS_BOARD_COLUMN  15          // 棋盘列数
@@ -9,8 +9,8 @@
 #define SPOT_NONE           0.5         // 无子
 #define SPOT_BLACK          0.0         // 黑子
 
-#define GAME_WIN_SCORE      1.0         // 赢棋得分
-#define GAME_DRAWN_SCORE    0.5         // 和棋得分
+#define GAME_WIN_SCORE      0.1         // 赢棋得分
+#define GAME_DRAWN_SCORE    0.05        // 和棋得分
 #define GAME_LOSE_SCORE     0.0         // 输棋得分
 
 typedef LMatrix<double> LChessBoard;    // 棋盘
@@ -28,9 +28,11 @@ struct LTrainData
     bool        GameEnd;    // 标记游戏是否结束
     LChessBoard State;      // 当前状态
     LChessPos   Action;     // 执行动作(落子位置)
-    double      Reward;     // 回报值(得分值), 1.0(白子赢), 0.5(和棋), 0.0(白子输棋)
+    double      Reward;     // 回报值(得分值), 0.1(白子赢), 0.05(和棋), 0.0(白子输棋)
     LChessBoard NextState;  // 下个状态
 };
+
+class CGomokuAi;
 
 /// @brief 五子棋Ai, 执白子
 class LGomokuAi
@@ -52,15 +54,7 @@ public:
     /// @param[in] data 训练数据
     void Train(IN const LTrainData& data);
 private:
-    LBPNetwork* m_pBrain;       // Ai的大脑
-
-    LNNMatrix m_inputCache;         // 输入缓存, 提高程序执行效率
-    LNNMatrix m_outputCache;        // 输出缓存, 提高程序执行效率
-    LNNMatrix m_trainInputCache1;   // 输入缓存, 提高程序执行效率
-    LNNMatrix m_trainoutputCache1;  // 输出缓存, 提高程序执行效率
-    LNNMatrix m_trainInputCache2;   // 输入缓存, 提高程序执行效率
-    LNNMatrix m_trainoutputCache2;  // 输出缓存, 提高程序执行效率
-    
+    CGomokuAi* m_pGomokuAi;         // 五子棋Ai实现对象
 };
 
 class CTrainDataPool;

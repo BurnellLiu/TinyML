@@ -1,4 +1,5 @@
 ﻿#include "GomokuAi.h"
+#include "LNeuralNetwork.h"
 
 #include <cmath>
 #include <cstdlib>
@@ -10,10 +11,26 @@ using std::map;
 #ifdef _DEBUG
 #define DebugPrint(format, ...) printf(format, __VA_ARGS__)
 #else
-#define DebugPrint(format, ...)
+#define DebugPrint(format, ...) printf(format, __VA_ARGS__)
 #endif
 
 #define CHESSMAN_NUM CHESS_BOARD_ROW*CHESS_BOARD_COLUMN     // 棋子总数
+
+/// @brief 打印矩阵
+static void MatrixPrint(IN const LNNMatrix& dataMatrix)
+{
+    printf("Matrix Row: %u  Col: %u\n", dataMatrix.RowLen, dataMatrix.ColumnLen);
+    for (unsigned int i = 0; i < dataMatrix.RowLen; i++)
+    {
+        for (unsigned int j = 0; j < dataMatrix.ColumnLen; j++)
+        {
+            printf("%.5f  ", dataMatrix[i][j]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
 
 /// @brief 产生随机小数, 范围0~1
 /// @return 随机小数
@@ -31,150 +48,209 @@ inline int RandInt(int min, int max)
     return rand() % (max - min + 1) + min;
 }
 
+/// @brief 五子棋Ai, 执白子
+class CGomokuAi
+{
+public:
+    /// @brief 构造函数
+    CGomokuAi()
+    {
+        LBPNetworkPogology pogology;
+        pogology.InputNumber = CHESSMAN_NUM;
+        pogology.OutputNumber = CHESSMAN_NUM;
+        pogology.HiddenLayerNumber = 2;
+        pogology.NeuronsOfHiddenLayer = 128;
+        m_pBrain = nullptr;
+        m_pBrain = new LBPNetwork(pogology);
+        m_pBrain->SaveToFile(".\\Network.txt");
+
+        m_inputCache.Reset(1, CHESSMAN_NUM);
+        m_trainInputCache1.Reset(1, CHESSMAN_NUM);
+        m_trainInputCache2.Reset(1, CHESSMAN_NUM);
+
+        m_actionVecCache.reserve(CHESSMAN_NUM);
+    }
+
+    /// @brief 析构函数
+    ~CGomokuAi()
+    {
+        if (m_pBrain != nullptr)
+        {
+            delete m_pBrain;
+            m_pBrain = nullptr;
+        }
+    }
+
+    /// @brief 落子
+    /// @param[in] chessBoard 当前棋局
+    /// @param[in] e 随机执行动作的概率[0-1](不思考, 随机执行)
+    /// @param[out] pPos 存储落子位置
+    void Action(IN const LChessBoard& chessBoard, IN double e, OUT LChessPos* pPos)
+    {
+        if (chessBoard.RowLen != CHESS_BOARD_ROW ||
+            chessBoard.ColumnLen != CHESS_BOARD_COLUMN)
+            return;
+        if (e < 0.0 || e > 1.0)
+            return;
+        if (pPos == nullptr)
+            return;
+
+
+        // 随机执行
+        if (RandFloat() < e)
+        {
+            int row = RandInt(0, CHESS_BOARD_ROW - 1);
+            int col = RandInt(0, CHESS_BOARD_COLUMN - 1);
+            pPos->Row = (unsigned int)row;
+            pPos->Col = (unsigned int)col;
+            return;
+        }
+
+        // 思考后执行
+        for (unsigned int row = 0; row < chessBoard.RowLen; row++)
+        {
+            for (unsigned int col = 0; col < chessBoard.ColumnLen; col++)
+            {
+                unsigned int idx = row * CHESS_BOARD_COLUMN + col;
+                m_inputCache[0][idx] = chessBoard[row][col];
+            }
+        }
+
+        m_pBrain->Active(m_inputCache, &m_outputCache);
+
+        // 找出最大动作值
+        double maxAction = 0.0;
+        
+        for (unsigned int i = 0; i < m_outputCache.ColumnLen; i++)
+        {
+            if (m_outputCache[0][i] > maxAction)
+            {
+                m_actionVecCache.clear();
+                m_actionVecCache.push_back(i);
+                maxAction = m_outputCache[0][i];
+            }
+            else if (m_outputCache[0][i] == maxAction)
+            {
+                m_actionVecCache.push_back(i);
+            }
+        }
+
+        unsigned int actionIdx = 0;
+        if (m_actionVecCache.size() > 1)
+        {
+            int i = RandInt(0, int(m_actionVecCache.size() - 1));
+            actionIdx = i;
+        }
+
+        unsigned int action = m_actionVecCache[actionIdx];
+
+        pPos->Row = action / CHESS_BOARD_COLUMN;
+        pPos->Col = action % CHESS_BOARD_COLUMN;
+    }
+
+    /// @brief 训练
+    /// @param[in] data 训练数据
+    void Train(IN const LTrainData& data)
+    {
+        double newActionValue = 0.0;
+        unsigned int action = data.Action.Row * CHESS_BOARD_COLUMN + data.Action.Col;
+
+        for (unsigned int row = 0; row < data.State.RowLen; row++)
+        {
+            for (unsigned int col = 0; col < data.State.ColumnLen; col++)
+            {
+                unsigned int idx = row * CHESS_BOARD_COLUMN + col;
+                m_trainInputCache1[0][idx] = data.State[row][col];
+            }
+        }
+        m_pBrain->Active(m_trainInputCache1, &m_trainOutputCache1);
+
+        if (!data.GameEnd)
+        {
+            for (unsigned int row = 0; row < data.NextState.RowLen; row++)
+            {
+                for (unsigned int col = 0; col < data.NextState.ColumnLen; col++)
+                {
+                    unsigned int idx = row * CHESS_BOARD_COLUMN + col;
+                    m_trainInputCache2[0][idx] = data.NextState[row][col];
+                }
+            }
+
+            m_pBrain->Active(m_trainInputCache2, &m_trainOutputCache2);
+
+            double currentActionValue = m_trainOutputCache1[0][action];
+
+            double nextActionValueMax = 0.0;
+            for (unsigned int col = 0; col < m_trainOutputCache2.ColumnLen; col++)
+            {
+                if (m_trainOutputCache2[0][col] > nextActionValueMax)
+                    nextActionValueMax = m_trainOutputCache2[0][col];
+            }
+
+            newActionValue = currentActionValue + 0.5 * (data.Reward + 0.9 * nextActionValueMax - currentActionValue);
+            if (newActionValue < 0.0)
+                newActionValue = 0.0;
+            if (newActionValue > 1.0)
+                newActionValue = 1.0;
+        }
+        else
+        {
+            newActionValue = data.Reward;
+        }
+
+        DebugPrint("Action: %4u OldValue: %f NewValue: %f ",
+            action,
+            m_trainOutputCache1[0][action],
+            newActionValue);
+
+        m_trainOutputCache1[0][action] = newActionValue;
+
+        unsigned int trainCount = 1000;
+        for (unsigned int i = 0; i < trainCount; i++)
+        {
+            float rate = 3.0f * (trainCount - i) / trainCount;
+            m_pBrain->Train(m_trainInputCache1, m_trainOutputCache1, rate);
+        }
+        m_pBrain->Active(m_trainInputCache1, &m_trainOutputCache2);
+        DebugPrint("TrainValue: %f\n", m_trainOutputCache2[0][action]);
+
+    }
+private:
+    LBPNetwork* m_pBrain;                   // Ai的大脑
+
+    LNNMatrix m_inputCache;                 // 输入缓存, 提高程序执行效率
+    LNNMatrix m_outputCache;                // 输出缓存, 提高程序执行效率
+    LNNMatrix m_trainInputCache1;           // 输入缓存, 提高程序执行效率
+    LNNMatrix m_trainOutputCache1;          // 输出缓存, 提高程序执行效率
+    LNNMatrix m_trainInputCache2;           // 输入缓存, 提高程序执行效率
+    LNNMatrix m_trainOutputCache2;          // 输出缓存, 提高程序执行效率
+
+    vector<unsigned int> m_actionVecCache;  // 动作缓存, 提高程序执行效率
+
+};
+
 LGomokuAi::LGomokuAi()
 {
-    LBPNetworkPogology pogology;
-    pogology.InputNumber = CHESSMAN_NUM;
-    pogology.OutputNumber = CHESSMAN_NUM;
-    pogology.HiddenLayerNumber = 2;
-    pogology.NeuronsOfHiddenLayer = 128;
-    m_pBrain = nullptr;
-    m_pBrain = new LBPNetwork(pogology);
-
-    m_inputCache.Reset(1, CHESSMAN_NUM);
+    m_pGomokuAi = new CGomokuAi();
 }
 
 LGomokuAi::~LGomokuAi()
 {
-    if (m_pBrain != nullptr)
+    if (m_pGomokuAi != nullptr)
     {
-        delete m_pBrain;
-        m_pBrain = nullptr;
+        delete m_pGomokuAi;
+        m_pGomokuAi = nullptr;
     }
 }
 
 void LGomokuAi::Action(IN const LChessBoard& chessBoard, IN double e, OUT LChessPos* pPos)
 {
-    if (chessBoard.RowLen != CHESS_BOARD_ROW || 
-        chessBoard.ColumnLen != CHESS_BOARD_COLUMN)
-        return;
-    if (e < 0.0 || e > 1.0)
-        return;
-    if (pPos == nullptr)
-        return;
-
-
-    // 随机执行
-    if (RandFloat() < e)
-    {
-        int row = RandInt(0, CHESS_BOARD_ROW - 1);
-        int col = RandInt(0, CHESS_BOARD_COLUMN - 1);
-        pPos->Row = (unsigned int)row;
-        pPos->Col = (unsigned int)col;
-        return;
-    }
-
-    // 思考后执行
-    for (unsigned int row = 0; row < chessBoard.RowLen; row++)
-    {
-        for (unsigned int col = 0; col < chessBoard.ColumnLen; col++)
-        {
-            unsigned int idx = row * CHESS_BOARD_COLUMN + col;
-            m_inputCache[0][idx] = chessBoard[row][col];
-        }
-    }
-
-    m_pBrain->Active(m_inputCache, &m_outputCache);
-
-    // 找出最大动作值
-    double maxAction = 0.0;
-    vector<unsigned int> actionVec;
-    for (unsigned int i = 0; i < m_outputCache.ColumnLen; i++)
-    {
-        if (m_outputCache[0][i] > maxAction)
-        {
-            actionVec.clear();
-            actionVec.push_back(i);
-            maxAction = m_outputCache[0][i];
-        }
-        else if (m_outputCache[0][i] == maxAction)
-        {
-            actionVec.push_back(i);
-        }
-    }
-
-    unsigned int actionIdx = 0;
-    if (actionVec.size() > 1)
-    {
-        int i = RandInt(0, int(actionVec.size() - 1));
-        actionIdx = i;
-    }
-
-    unsigned int action = actionVec[actionIdx];
-
-    pPos->Row = action / CHESS_BOARD_COLUMN;
-    pPos->Col = action % CHESS_BOARD_COLUMN;
-
+    m_pGomokuAi->Action(chessBoard, e, pPos);
 }
 
 void LGomokuAi::Train(IN const LTrainData& data)
 {
-    double newActionValue = 0.0;
-    unsigned int action = data.Action.Row * CHESS_BOARD_COLUMN + data.Action.Col;
-
-    for (unsigned int row = 0; row < data.State.RowLen; row++)
-    {
-        for (unsigned int col = 0; col < data.State.ColumnLen; col++)
-        {
-            unsigned int idx = row * CHESS_BOARD_COLUMN + col;
-            m_trainInputCache1[0][idx] = data.State[row][col];
-        }
-    }
-    m_pBrain->Active(m_trainInputCache1, &m_trainoutputCache1);
-
-    if (!data.GameEnd)
-    {
-        for (unsigned int row = 0; row < data.NextState.RowLen; row++)
-        {
-            for (unsigned int col = 0; col < data.NextState.ColumnLen; col++)
-            {
-                unsigned int idx = row * CHESS_BOARD_COLUMN + col;
-                m_trainInputCache2[0][idx] = data.NextState[row][col];
-            }
-        }
-
-        m_pBrain->Active(m_trainInputCache2, &m_trainoutputCache2);
-
-        double currentActionValue = m_trainoutputCache1[0][action];
-
-        double nextActionValueMax = 0.0;
-        for (unsigned int col = 0; col < m_trainoutputCache2.ColumnLen; col++)
-        {
-            if (m_trainoutputCache2[0][col] > nextActionValueMax)
-                nextActionValueMax = m_trainoutputCache2[0][col];
-        }
-
-        newActionValue = currentActionValue + 0.5 * (data.Reward + 1.0 * nextActionValueMax - currentActionValue);
-        if (newActionValue < 0.0)
-            newActionValue = 0.0;
-        if (newActionValue > 1.0)
-            newActionValue = 1.0;
-    }
-    else
-    {
-        newActionValue = data.Reward;
-    }
-    
-
-    m_trainoutputCache1[0][action] = newActionValue;
-
-    unsigned int trainCount = 3000;
-    for (unsigned int i = 0; i < trainCount; i++)
-    {
-        float rate = 3.0f * (trainCount - i) / trainCount;
-        m_pBrain->Train(m_trainInputCache1, m_trainoutputCache1, rate);
-    }
-    
+    m_pGomokuAi->Train(data);
 }
 
 /// @brief 训练数据池
@@ -222,6 +298,7 @@ public:
             {
                 m_dataUsedSize += 1;
 
+                m_dataUsedVec[i] = true;
                 return &(m_dataVec[i]);
             }
         }
@@ -250,6 +327,8 @@ public:
                 if (randCount == count)
                 {
                     (*pData) = m_dataVec[i];
+                    m_dataUsedSize -= 1;
+                    m_dataUsedVec[i] = false;
                     break;
                 }
             }

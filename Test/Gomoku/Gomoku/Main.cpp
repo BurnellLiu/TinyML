@@ -1,14 +1,20 @@
 ﻿
-#include "GomokuControl.h"
+#include "GomokuAi.h"
 
 #include <vector>
 using std::vector;
 
+#define TRAIN_POOL_SIZE     500        // 训练池大小
+#define TRAIN_DATAT_NUM     50         // 每次训练数 
+#define SELF_GAME_NUM       10000      // 自我对弈数
+
+
 #ifdef _DEBUG
 #define DebugPrint(format, ...) printf(format, __VA_ARGS__)
 #else
-#define DebugPrint(format, ...)
+#define DebugPrint(format, ...) printf(format, __VA_ARGS__)
 #endif
+
 
 /// @brief 棋盘状态
 enum CHESS_BOARD_STATE
@@ -185,16 +191,14 @@ int main()
     LChessBoard chessBoardN;            // 正常棋盘
     LChessBoard chessBoardR;            // 反转棋盘(黑白调换)
 
-    int poolSize = 200;
-    vector<LTrainData> trainPool;       // 训练池
-    trainPool.resize(poolSize);
-    vector<int> idxVec;                 // 索引向量
-    idxVec.resize(poolSize);            // 
+    LTrainDataPool dataPool(TRAIN_POOL_SIZE + 8);
 
     // 自我对弈, 进行训练
-    int gameCount = 10000;
+    int gameCount = SELF_GAME_NUM;
     for (int i = 0; i < gameCount; i++)
     {
+        DebugPrint("SelfGame%i\n", i);
+
         // 重置棋盘
         chessBoardN.Reset(CHESS_BOARD_ROW, CHESS_BOARD_COLUMN, SPOT_NONE);
         chessBoardR.Reset(CHESS_BOARD_ROW, CHESS_BOARD_COLUMN, SPOT_NONE);
@@ -209,23 +213,27 @@ int main()
 
             // Ai以黑子身份下棋即在反转棋盘上以白子下棋
             ai.Action(chessBoardR, e, &pos);
+
+            LTrainData* pDataBlack = dataPool.NewData();
+            pDataBlack->State = chessBoardR;
+            pDataBlack->Action = pos;
+
             state = CheckChessBoard(chessBoardR, pos, SPOT_WHITE);
             // 游戏结束
             if (state != STATE_BLACK_WHITE)
             {
-                LTrainData data;
-                data.GameEnd = true;
-                data.State = chessBoardR;
-                data.Action = pos;
+                pDataBlack->GameEnd = true;
                 if (state == STATE_BLACK_WIN)
-                    data.Reward = GAME_LOSE_SCORE;
+                    pDataBlack->Reward = GAME_LOSE_SCORE;
                 if (state == STATE_WHITE_WIN)
-                    data.Reward = GAME_WIN_SCORE;
+                    pDataBlack->Reward = GAME_WIN_SCORE;
                 if (state == STATE_NONE_WIN)
-                    data.Reward = GAME_DRAWN_SCORE;
+                    pDataBlack->Reward = GAME_DRAWN_SCORE;
 
                 break;
             }
+
+
 
             chessBoardN[pos.Row][pos.Col] = SPOT_BLACK;
             chessBoardR[pos.Row][pos.Col] = SPOT_WHITE;
@@ -233,30 +241,71 @@ int main()
 
             // Ai以白子身份下棋
             ai.Action(chessBoardN, e, &pos);
+
             state = CheckChessBoard(chessBoardN, pos, SPOT_WHITE);
             // 游戏结束
             if (state != STATE_BLACK_WHITE)
             {
-                LTrainData data;
-                data.GameEnd = true;
-                data.State = chessBoardN;
-                data.Action = pos;
+                pDataBlack->GameEnd = true;
+
+                LTrainData* pDataWhite = dataPool.NewData();
+                pDataWhite->State = chessBoardN;
+                pDataWhite->Action = pos;
+                pDataWhite->GameEnd = true;
                 if (state == STATE_BLACK_WIN)
-                    data.Reward = GAME_LOSE_SCORE;
+                {
+                    pDataWhite->Reward = GAME_LOSE_SCORE;
+                    pDataBlack->Reward = GAME_WIN_SCORE;
+                }
+                    
                 if (state == STATE_WHITE_WIN)
-                    data.Reward = GAME_WIN_SCORE;
+                {
+                    pDataWhite->Reward = GAME_WIN_SCORE;
+                    pDataBlack->Reward = GAME_LOSE_SCORE;
+                }
+                    
                 if (state == STATE_NONE_WIN)
-                    data.Reward = GAME_DRAWN_SCORE;
+                {
+                    pDataWhite->Reward = GAME_DRAWN_SCORE;
+                    pDataBlack->Reward = GAME_DRAWN_SCORE;
+                }
+                    
 
                 break;
             }
 
             chessBoardN[pos.Row][pos.Col] = SPOT_WHITE;
             chessBoardR[pos.Row][pos.Col] = SPOT_BLACK;
+
+            pDataBlack->GameEnd = false;
+            pDataBlack->Reward = GAME_DRAWN_SCORE;
+            pDataBlack->NextState = chessBoardR;
             
+            if (dataPool.Size() >= TRAIN_POOL_SIZE)
+            {
+                LTrainData data;
+                for (unsigned int i = 0; i < TRAIN_DATAT_NUM; i++)
+                {
+                    DebugPrint("Train: %d%%\n", (i + 1) * 100 / TRAIN_DATAT_NUM);
+                    dataPool.Pop(&data);
+                    ai.Train(data);
+                }
+                system("pause");
+            }
 
         }
 
+        if (dataPool.Size() >= TRAIN_POOL_SIZE)
+        {
+            LTrainData data;
+            for (unsigned int i = 0; i < TRAIN_DATAT_NUM; i++)
+            {
+                DebugPrint("Train: %d%%\n", (i + 1) * 100 / TRAIN_DATAT_NUM);
+                dataPool.Pop(&data);
+                ai.Train(data);
+            }
+            system("pause");
+        }
 
 
     }

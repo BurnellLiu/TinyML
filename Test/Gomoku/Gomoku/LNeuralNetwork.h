@@ -23,10 +23,10 @@ typedef LMatrix<double> LNNMatrix; // 神经网络矩阵
 /// 隐藏层中至少有一个神经元
 struct LBPNetworkPogology
 {
-    unsigned int InputNumber; ///< 输入个数, 要求大于等于1的数
-    unsigned int OutputNumber; ///< 输出个数, 要求大于等于1的数
-    unsigned int HiddenLayerNumber; ///< 隐藏层层数, 要求大于等于1的数
-    unsigned int NeuronsOfHiddenLayer; ///< 单个隐藏层中的神经元个数, 要求大于等于1的数
+    unsigned int InputNumber;           // 输入个数, 要求大于等于1的数
+    unsigned int OutputNumber;          // 输出个数, 要求大于等于1的数
+    unsigned int HiddenLayerNumber;     // 隐藏层层数, 要求大于等于1的数
+    unsigned int NeuronsOfHiddenLayer;  // 单个隐藏层中的神经元个数, 要求大于等于1的数
 };
 
 class CBPNetwork;
@@ -57,6 +57,10 @@ public:
     /// @param[out] pOutputMatrix 存储输出数据矩阵, 每一行为一个输出, 该值不能为0
     /// @return 成功返回true, 失败返回false, 参数有误或者网络未初始化会失败
     bool Active(IN const LNNMatrix& inputMatrix, OUT LNNMatrix* pOutputMatrix);
+
+    /// @brief 将神经网络保存到文件中
+    /// @param[in] pFilePath 文件路径
+    void SaveToFile(IN char* pFilePath);
 
 private:
     CBPNetwork* m_pBPNetwork; ///< BP网络的实现对象

@@ -33,7 +33,8 @@ public:
         m_weightList.resize(inputNum + 1);
         for (unsigned int i = 0; i < m_weightList.size(); i++)
         {
-            m_weightList[i] = RandClamped();
+            // m_weightList[i] = -0.1;
+            m_weightList[i] = -0.1;
         }
     }
 
@@ -321,6 +322,29 @@ public:
         return true;
     }
 
+    /// @brief 将神经网络保存到文件中
+    void SaveToFile(IN char* pFilePath)
+    {
+        if (pFilePath == nullptr)
+            return;
+
+        FILE* pFile = nullptr;
+        fopen_s(&pFile, pFilePath, "w");
+        if (pFile == nullptr)
+            return;
+        
+        unsigned char buffer[4] = {1};
+        // 在前16个字节中写入神经网络结构
+        //fwrite(&(m_networkPogology.InputNumber), 4, 1, pFile);
+//         fwrite(&m_networkPogology.OutputNumber, sizeof(m_networkPogology.OutputNumber), 1, pFile);
+//         fwrite(&m_networkPogology.HiddenLayerNumber, sizeof(m_networkPogology.HiddenLayerNumber), 1, pFile);
+//         fwrite(&m_networkPogology.NeuronsOfHiddenLayer, sizeof(m_networkPogology.NeuronsOfHiddenLayer), 1, pFile);
+        memcpy_s(buffer, 4, &(m_networkPogology.InputNumber), 4);
+        fwrite(buffer, 4, 1, pFile);
+        fclose(pFile);
+        pFile = nullptr;
+    }
+
 private:
     /// @brief 初始化BP网络
     bool Init(IN const LBPNetworkPogology& pogology)
@@ -424,4 +448,9 @@ bool LBPNetwork::Train(IN const LNNMatrix& inputMatrix, IN const LNNMatrix& outp
 bool LBPNetwork::Active(IN const LNNMatrix& inputMatrix, OUT LNNMatrix* pOutputMatrix)
 {
     return m_pBPNetwork->Active(inputMatrix, pOutputMatrix);
+}
+
+void LBPNetwork::SaveToFile(IN char* pFilePath)
+{
+    m_pBPNetwork->SaveToFile(pFilePath);
 }

@@ -111,12 +111,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="GomokuAi.cpp" />
-    <ClCompile Include="GomokuControl.cpp" />
+    <ClCompile Include="Main.cpp" />
     <ClCompile Include="LNeuralNetwork.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GomokuAi.h" />
-    <ClInclude Include="GomokuControl.h" />
     <ClInclude Include="LMatrix.h" />
     <ClInclude Include="LNeuralNetwork.h" />
   </ItemGroup>
