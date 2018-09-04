@@ -98,10 +98,28 @@ public:
         // 随机执行
         if (RandFloat() < e)
         {
-            int row = RandInt(0, CHESS_BOARD_ROW - 1);
-            int col = RandInt(0, CHESS_BOARD_COLUMN - 1);
-            pPos->Row = (unsigned int)row;
-            pPos->Col = (unsigned int)col;
+            m_actionVecCache.clear();
+            for (unsigned int row = 0; row < chessBoard.RowLen; row++)
+            {
+                for (unsigned int col = 0; col < chessBoard.ColumnLen; col++)
+                {
+                    if (chessBoard[row][col] == SPOT_NONE)
+                        m_actionVecCache.push_back(row * CHESS_BOARD_COLUMN + col);
+                }
+            }
+
+            unsigned int actionIdx = 0;
+            if (m_actionVecCache.size() > 1)
+            {
+                int i = RandInt(0, int(m_actionVecCache.size() - 1));
+                actionIdx = i;
+            }
+
+            unsigned int action = m_actionVecCache[actionIdx];
+
+            pPos->Row = action / CHESS_BOARD_COLUMN;
+            pPos->Col = action % CHESS_BOARD_COLUMN;
+
             return;
         }
 
