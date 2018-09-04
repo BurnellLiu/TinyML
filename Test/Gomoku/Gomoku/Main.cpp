@@ -1,9 +1,6 @@
 ﻿
 #include "GomokuAi.h"
 
-#include <vector>
-using std::vector;
-
 #define TRAIN_POOL_SIZE     500        // 训练池大小
 #define TRAIN_DATAT_NUM     50         // 每次训练数 
 #define SELF_GAME_NUM       10000      // 自我对弈数
@@ -188,10 +185,14 @@ CHESS_BOARD_STATE CheckChessBoard(const LChessBoard& chessBoard, LChessPos& ches
 int main()
 {
     LGomokuAi ai;
+    //ai.LoadFromFile(".\\6000-Train.bin");
     LChessBoard chessBoardN;            // 正常棋盘
     LChessBoard chessBoardR;            // 反转棋盘(黑白调换)
 
     LTrainDataPool dataPool(TRAIN_POOL_SIZE + 8);
+
+    vector<LTrainData> trainDataVec;
+    trainDataVec.resize(TRAIN_DATAT_NUM);
 
     // 自我对弈, 进行训练
     int gameCount = SELF_GAME_NUM;
@@ -212,7 +213,8 @@ int main()
         chessBoardR.Reset(CHESS_BOARD_ROW, CHESS_BOARD_COLUMN, SPOT_NONE);
 
         // 计算随机率
-        double e = (gameCount - i) / (double)(gameCount);
+        double e = (gameCount - i) / (double)(gameCount * 1.5);
+        //e = 0.0001;
 
         while (true)
         {
@@ -221,6 +223,7 @@ int main()
 
             // Ai以黑子身份下棋即在反转棋盘上以白子下棋
             ai.Action(chessBoardR, e, &pos);
+            //DebugPrint("BlackAction: %u %u\n", pos.Row, pos.Col);
 
             LTrainData* pDataBlack = dataPool.NewData();
             pDataBlack->State = chessBoardR;
@@ -238,6 +241,7 @@ int main()
                 if (state == STATE_NONE_WIN)
                     pDataBlack->Reward = GAME_DRAWN_SCORE;
 
+                //system("pause");
                 break;
             }
 
@@ -249,7 +253,7 @@ int main()
 
             // Ai以白子身份下棋
             ai.Action(chessBoardN, e, &pos);
-
+            //DebugPrint("WhiteAction: %u %u\n", pos.Row, pos.Col);
             state = CheckChessBoard(chessBoardN, pos, SPOT_WHITE);
             // 游戏结束
             if (state != STATE_BLACK_WHITE)
@@ -278,7 +282,7 @@ int main()
                     pDataBlack->Reward = GAME_DRAWN_SCORE;
                 }
                     
-
+                //system("pause");
                 break;
             }
 
@@ -291,26 +295,24 @@ int main()
             
             if (dataPool.Size() >= TRAIN_POOL_SIZE)
             {
-                LTrainData data;
+                DebugPrint("Training...\n");
                 for (unsigned int i = 0; i < TRAIN_DATAT_NUM; i++)
                 {
-                    DebugPrint("Train: %d%%\n", (i + 1) * 100 / TRAIN_DATAT_NUM);
-                    dataPool.Pop(&data);
-                    ai.Train(data);
+                    dataPool.Pop(&trainDataVec[i]);
                 }
+                ai.Train(trainDataVec);
             }
 
         }
 
         if (dataPool.Size() >= TRAIN_POOL_SIZE)
         {
-            LTrainData data;
+            DebugPrint("Training...\n");
             for (unsigned int i = 0; i < TRAIN_DATAT_NUM; i++)
             {
-                DebugPrint("Train: %d%%\n", (i + 1) * 100 / TRAIN_DATAT_NUM);
-                dataPool.Pop(&data);
-                ai.Train(data);
+                dataPool.Pop(&trainDataVec[i]);
             }
+            ai.Train(trainDataVec);
         }
 
 

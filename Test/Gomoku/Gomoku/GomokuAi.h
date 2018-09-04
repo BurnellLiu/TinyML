@@ -2,16 +2,19 @@
 
 #include "LMatrix.h"
 
+#include <vector>
+using std::vector;
+
 #define CHESS_BOARD_ROW     15          // 棋盘行数
 #define CHESS_BOARD_COLUMN  15          // 棋盘列数
 
-#define SPOT_WHITE          1.0         // 白子
-#define SPOT_NONE           0.5         // 无子
-#define SPOT_BLACK          0.0         // 黑子
+#define SPOT_WHITE           1.0        // 白子
+#define SPOT_NONE            0.0        // 无子
+#define SPOT_BLACK          -1.0        // 黑子
 
-#define GAME_WIN_SCORE      0.1         // 赢棋得分
-#define GAME_DRAWN_SCORE    0.05        // 和棋得分
-#define GAME_LOSE_SCORE     0.0         // 输棋得分
+#define GAME_WIN_SCORE       1.0        // 赢棋得分
+#define GAME_DRAWN_SCORE     0.0        // 和棋得分
+#define GAME_LOSE_SCORE     -1.0        // 输棋得分
 
 typedef LMatrix<double> LChessBoard;    // 棋盘
 
@@ -51,8 +54,8 @@ public:
     void Action(IN const LChessBoard& chessBoard, IN double e, OUT LChessPos* pPos);
 
     /// @brief 训练
-    /// @param[in] data 训练数据
-    void Train(IN const LTrainData& data);
+    /// @param[in] datas 训练数据
+    void Train(IN const vector<LTrainData>& datas);
 
     /// @brief 将五子棋Ai保存到文件中
     /// @param[in] pFilePath 文件路径

@@ -114,7 +114,7 @@ private:
     /// @return 激活值
     double Sigmoid(IN double input)
     {
-        return ( 1.0 / ( 1.0 + exp(-input)));
+        return ( 2.0 / ( 1.0 + exp(-input))-1.0);
     }
 
 private:

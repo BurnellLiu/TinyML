@@ -166,61 +166,68 @@ public:
     }
 
     /// @brief 训练
-    /// @param[in] data 训练数据
-    void Train(IN const LTrainData& data)
+    /// @param[in] datas 训练数据
+    void Train(IN const vector<LTrainData>& datas)
     {
-        double newActionValue = 0.0;
-        unsigned int action = data.Action.Row * CHESS_BOARD_COLUMN + data.Action.Col;
+        m_trainInputCache1.Reset(datas.size(), CHESSMAN_NUM);
 
-        for (unsigned int row = 0; row < data.State.RowLen; row++)
+        for (unsigned int i = 0; i < datas.size(); i++)
         {
-            for (unsigned int col = 0; col < data.State.ColumnLen; col++)
+            const LTrainData& data = datas[i];
+
+            for (unsigned int row = 0; row < data.State.RowLen; row++)
             {
-                unsigned int idx = row * CHESS_BOARD_COLUMN + col;
-                m_trainInputCache1[0][idx] = data.State[row][col];
+                for (unsigned int col = 0; col < data.State.ColumnLen; col++)
+                {
+                    unsigned int idx = row * CHESS_BOARD_COLUMN + col;
+                    m_trainInputCache1[i][idx] = data.State[row][col];
+                }
             }
         }
         m_pBrain->Active(m_trainInputCache1, &m_trainOutputCache1);
 
-        if (!data.GameEnd)
+        for (unsigned int i = 0; i < datas.size(); i++)
         {
-            for (unsigned int row = 0; row < data.NextState.RowLen; row++)
+            const LTrainData& data = datas[i];
+            double newActionValue = 0.0;
+            unsigned int action = data.Action.Row * CHESS_BOARD_COLUMN + data.Action.Col;
+
+            if (!data.GameEnd)
             {
-                for (unsigned int col = 0; col < data.NextState.ColumnLen; col++)
+                for (unsigned int row = 0; row < data.NextState.RowLen; row++)
                 {
-                    unsigned int idx = row * CHESS_BOARD_COLUMN + col;
-                    m_trainInputCache2[0][idx] = data.NextState[row][col];
+                    for (unsigned int col = 0; col < data.NextState.ColumnLen; col++)
+                    {
+                        unsigned int idx = row * CHESS_BOARD_COLUMN + col;
+                        m_trainInputCache2[0][idx] = data.NextState[row][col];
+                    }
                 }
+
+                m_pBrain->Active(m_trainInputCache2, &m_trainOutputCache2);
+
+                double currentActionValue = m_trainOutputCache1[i][action];
+
+                double nextActionValueMax = 0.0;
+                for (unsigned int col = 0; col < m_trainOutputCache2.ColumnLen; col++)
+                {
+                    if (m_trainOutputCache2[0][col] > nextActionValueMax)
+                        nextActionValueMax = m_trainOutputCache2[0][col];
+                }
+
+                newActionValue = currentActionValue + 0.5 * (data.Reward + 0.9 * nextActionValueMax - currentActionValue);
+                if (newActionValue < 0.0)
+                    newActionValue = 0.0;
+                if (newActionValue > 1.0)
+                    newActionValue = 1.0;
             }
-
-            m_pBrain->Active(m_trainInputCache2, &m_trainOutputCache2);
-
-            double currentActionValue = m_trainOutputCache1[0][action];
-
-            double nextActionValueMax = 0.0;
-            for (unsigned int col = 0; col < m_trainOutputCache2.ColumnLen; col++)
+            else
             {
-                if (m_trainOutputCache2[0][col] > nextActionValueMax)
-                    nextActionValueMax = m_trainOutputCache2[0][col];
+                newActionValue = data.Reward;
             }
 
-            newActionValue = currentActionValue + 0.5 * (data.Reward + 0.9 * nextActionValueMax - currentActionValue);
-            if (newActionValue < 0.0)
-                newActionValue = 0.0;
-            if (newActionValue > 1.0)
-                newActionValue = 1.0;
-        }
-        else
-        {
-            newActionValue = data.Reward;
+            m_trainOutputCache1[i][action] = newActionValue;
         }
 
-        DebugPrint("Action: %4u OldValue: %f NewValue: %f ",
-            action,
-            m_trainOutputCache1[0][action],
-            newActionValue);
-
-        m_trainOutputCache1[0][action] = newActionValue;
 
         unsigned int trainCount = 1000;
         for (unsigned int i = 0; i < trainCount; i++)
@@ -228,8 +235,6 @@ public:
             float rate = 3.0f * (trainCount - i) / trainCount;
             m_pBrain->Train(m_trainInputCache1, m_trainOutputCache1, rate);
         }
-        m_pBrain->Active(m_trainInputCache1, &m_trainOutputCache2);
-        DebugPrint("TrainValue: %f\n", m_trainOutputCache2[0][action]);
 
     }
 
@@ -286,9 +291,9 @@ void LGomokuAi::Action(IN const LChessBoard& chessBoard, IN double e, OUT LChess
     m_pGomokuAi->Action(chessBoard, e, pPos);
 }
 
-void LGomokuAi::Train(IN const LTrainData& data)
+void LGomokuAi::Train(IN const vector<LTrainData>& datas)
 {
-    m_pGomokuAi->Train(data);
+    m_pGomokuAi->Train(datas);
 }
 
 void LGomokuAi::Save2File(IN char* pFilePath)
