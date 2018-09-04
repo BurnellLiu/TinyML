@@ -136,7 +136,7 @@ public:
         m_pBrain->Active(m_inputCache, &m_outputCache);
 
         // 找出最大动作值
-        double maxAction = 0.0;
+        double maxAction = GAME_LOSE_SCORE;
         
         for (unsigned int i = 0; i < m_outputCache.ColumnLen; i++)
         {
@@ -215,10 +215,10 @@ public:
                 }
 
                 newActionValue = currentActionValue + 0.5 * (data.Reward + 0.9 * nextActionValueMax - currentActionValue);
-                if (newActionValue < 0.0)
-                    newActionValue = 0.0;
-                if (newActionValue > 1.0)
-                    newActionValue = 1.0;
+                if (newActionValue < GAME_LOSE_SCORE)
+                    newActionValue = GAME_LOSE_SCORE;
+                if (newActionValue > GAME_WIN_SCORE)
+                    newActionValue = GAME_WIN_SCORE;
             }
             else
             {

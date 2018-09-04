@@ -185,7 +185,7 @@ CHESS_BOARD_STATE CheckChessBoard(const LChessBoard& chessBoard, LChessPos& ches
 int main()
 {
     LGomokuAi ai;
-    //ai.LoadFromFile(".\\6000-Train.bin");
+    //ai.LoadFromFile(".\\1000-Train.bin");
     LChessBoard chessBoardN;            // 正常棋盘
     LChessBoard chessBoardR;            // 反转棋盘(黑白调换)
 
