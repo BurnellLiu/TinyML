@@ -12,6 +12,26 @@
 #define DebugPrint(format, ...) printf(format, __VA_ARGS__)
 #endif
 
+/// @brief 打印矩阵
+static void MatrixDebugPrint(IN const LChessBoard& dataMatrix)
+{
+    for (unsigned int i = 0; i < dataMatrix.RowLen; i++)
+    {
+        for (unsigned int j = 0; j < dataMatrix.ColumnLen; j++)
+        {
+            if (dataMatrix[i][j] == SPOT_WHITE)
+                DebugPrint("0 ");
+            if (dataMatrix[i][j] == SPOT_BLACK)
+                DebugPrint("* ");
+            if (dataMatrix[i][j] == SPOT_NONE)
+                DebugPrint("  ");
+            //DebugPrint("%2.1f ", dataMatrix[i][j]);
+        }
+        DebugPrint("\n");
+    }
+    DebugPrint("\n");
+}
+
 
 /// @brief 棋盘状态
 enum CHESS_BOARD_STATE
@@ -19,7 +39,8 @@ enum CHESS_BOARD_STATE
     STATE_BLACK_WIN = 0,        // 黑子胜
     STATE_WHITE_WIN = 1,        // 白子胜
     STATE_NONE_WIN = 2,         // 和棋
-    STATE_BLACK_WHITE = 3       // 未结束
+    STATE_BLACK_WHITE = 3,      // 未结束
+    STATE_ERROR_LOCATION = 4    // 错误位置
 };
 
 
@@ -35,10 +56,7 @@ CHESS_BOARD_STATE CheckChessBoard(const LChessBoard& chessBoard, LChessPos& ches
     unsigned int targetCol = chessPos.Col;
     if (chessBoard[targetRow][targetCol] != SPOT_NONE)
     {
-        if (chessType == SPOT_WHITE)
-            return STATE_BLACK_WIN;
-        if (chessType == SPOT_BLACK)
-            return STATE_WHITE_WIN;
+        STATE_ERROR_LOCATION;
     }
 
     // 检查横向是否连成5子
@@ -91,27 +109,24 @@ CHESS_BOARD_STATE CheckChessBoard(const LChessBoard& chessBoard, LChessPos& ches
 
     // 检查斜线是否连成5子
     spotCount = 1;
-    for (int row = int(targetRow - 1); row >= 0; row--)
+    for (int row = int(targetRow - 1), col = int(targetCol - 1); 
+        row >= 0 && col >= 0; 
+        row--, col--)
     {
-        for (int col = int(targetCol - 1); col >= 0; col--)
-        {
-            if (chessBoard[row][col] == chessType)
-                spotCount++;
-            else
-                break;
-        }
-        
+        if (chessBoard[row][col] == chessType)
+            spotCount++;
+        else
+            break;
     }
-    for (unsigned int row = targetRow + 1; row < chessBoard.RowLen; row++)
+    for (unsigned int row = targetRow + 1, col = targetCol + 1; 
+        row < chessBoard.RowLen && col < chessBoard.ColumnLen; 
+        row++, col++)
     {
-        for (unsigned int col = targetCol + 1; col < chessBoard.ColumnLen; col++)
-        {
-            if (chessBoard[row][col] == chessType)
-                spotCount++;
-            else
-                break;
-        }
 
+        if (chessBoard[row][col] == chessType)
+            spotCount++;
+        else
+            break;
     }
     if (spotCount >= 5)
     {
@@ -123,27 +138,23 @@ CHESS_BOARD_STATE CheckChessBoard(const LChessBoard& chessBoard, LChessPos& ches
 
     // 检查反斜线是否连成5子
     spotCount = 1;
-    for (int row = int(targetRow - 1); row >= 0; row--)
+    for (int row = int(targetRow - 1),  col = int(targetCol + 1);
+        row >= 0 && col < int(chessBoard.ColumnLen);
+        row--, col++)
     {
-        for (unsigned int col = targetCol + 1; col < chessBoard.ColumnLen; col++)
-        {
-            if (chessBoard[row][col] == chessType)
-                spotCount++;
-            else
-                break;
-        }
-
+        if (chessBoard[row][col] == chessType)
+            spotCount++;
+        else
+            break;
     }
-    for (unsigned int row = targetRow + 1; row < chessBoard.RowLen; row++)
+    for (int row = int(targetRow + 1), col = int(targetCol - 1);
+        row < int(chessBoard.RowLen) && col >= 0;
+        row++, col--)
     {
-        for (int col = int(targetCol - 1); col >= 0; col--)
-        {
-            if (chessBoard[row][col] == chessType)
-                spotCount++;
-            else
-                break;
-        }
-
+        if (chessBoard[row][col] == chessType)
+            spotCount++;
+        else
+            break;
     }
     if (spotCount >= 5)
     {
@@ -186,7 +197,7 @@ void Train()
 {
     LAiParam aiParam;
     aiParam.BrainLayersNum = 3;
-    aiParam.LayerNeuronsNum = 128;
+    aiParam.LayerNeuronsNum = 250;
     aiParam.QLearningRate = 0.5;
     aiParam.QLearningGamma = 0.9;
     aiParam.BrainTrainCount = 1000;
@@ -195,6 +206,7 @@ void Train()
     LGomokuAi ai(aiParam);
     LChessBoard chessBoardN;            // 正常棋盘
     LChessBoard chessBoardR;            // 反转棋盘(黑白调换)
+    LTrainData dataTmp;                 // 临时数据
 
     LTrainDataPool dataPool(TRAIN_POOL_SIZE + 8);
 
@@ -229,60 +241,61 @@ void Train()
 
             // Ai以黑子身份下棋即在反转棋盘上以白子下棋
             ai.Action(chessBoardR, e, &pos);
-
-            LTrainData* pDataBlack = dataPool.NewData();
-            pDataBlack->State = chessBoardR;
-            pDataBlack->Action = pos;
-
             state = CheckChessBoard(chessBoardR, pos, SPOT_WHITE);
+
             // 游戏结束
             if (state != STATE_BLACK_WHITE)
             {
-                pDataBlack->GameEnd = true;
-                if (state == STATE_BLACK_WIN)
-                    pDataBlack->Reward = GAME_LOSE_SCORE;
+                LTrainData* pDataeEnd = dataPool.NewData();
+                pDataeEnd->State = chessBoardR;
+                pDataeEnd->Action = pos;
+                pDataeEnd->GameEnd = true;
+                if (state == STATE_ERROR_LOCATION)
+                    pDataeEnd->Reward = GAME_LOSE_SCORE;
                 if (state == STATE_WHITE_WIN)
-                    pDataBlack->Reward = GAME_WIN_SCORE;
+                    pDataeEnd->Reward = GAME_WIN_SCORE;
                 if (state == STATE_NONE_WIN)
-                    pDataBlack->Reward = GAME_DRAWN_SCORE;
+                    pDataeEnd->Reward = GAME_DRAWN_SCORE;
 
                 break;
             }
 
-
+            dataTmp.State = chessBoardR;
+            dataTmp.Action = pos;
 
             chessBoardN[pos.Row][pos.Col] = SPOT_BLACK;
             chessBoardR[pos.Row][pos.Col] = SPOT_WHITE;
 
-
             // Ai以白子身份下棋
             ai.Action(chessBoardN, e, &pos);
             state = CheckChessBoard(chessBoardN, pos, SPOT_WHITE);
+
             // 游戏结束
             if (state != STATE_BLACK_WHITE)
             {
-                pDataBlack->GameEnd = true;
+                dataTmp.GameEnd = true;
 
-                LTrainData* pDataWhite = dataPool.NewData();
-                pDataWhite->State = chessBoardN;
-                pDataWhite->Action = pos;
-                pDataWhite->GameEnd = true;
-                if (state == STATE_BLACK_WIN)
+                LTrainData* pDataEnd = dataPool.NewData();
+                pDataEnd->State = chessBoardN;
+                pDataEnd->Action = pos;
+                pDataEnd->GameEnd = true;
+                if (state == STATE_ERROR_LOCATION)
                 {
-                    pDataWhite->Reward = GAME_LOSE_SCORE;
-                    pDataBlack->Reward = GAME_WIN_SCORE;
+                    pDataEnd->Reward = GAME_LOSE_SCORE;
                 }
-
                 if (state == STATE_WHITE_WIN)
                 {
-                    pDataWhite->Reward = GAME_WIN_SCORE;
-                    pDataBlack->Reward = GAME_LOSE_SCORE;
+                    pDataEnd->Reward = GAME_WIN_SCORE;
+                    dataTmp.Reward = GAME_LOSE_SCORE;
+                    LTrainData* pDataContinue = dataPool.NewData();
+                    (*pDataContinue) = dataTmp;
                 }
-
                 if (state == STATE_NONE_WIN)
-                {
-                    pDataWhite->Reward = GAME_DRAWN_SCORE;
-                    pDataBlack->Reward = GAME_DRAWN_SCORE;
+                { 
+                    pDataEnd->Reward = GAME_DRAWN_SCORE;
+                    dataTmp.Reward = GAME_LOSE_SCORE;
+                    LTrainData* pDataContinue = dataPool.NewData();
+                    (*pDataContinue) = dataTmp;
                 }
 
                 break;
@@ -291,9 +304,11 @@ void Train()
             chessBoardN[pos.Row][pos.Col] = SPOT_WHITE;
             chessBoardR[pos.Row][pos.Col] = SPOT_BLACK;
 
-            pDataBlack->GameEnd = false;
-            pDataBlack->Reward = GAME_DRAWN_SCORE;
-            pDataBlack->NextState = chessBoardR;
+            dataTmp.GameEnd = false;
+            dataTmp.Reward = GAME_DRAWN_SCORE;
+            dataTmp.NextState = chessBoardR;
+            LTrainData* pDataContinue = dataPool.NewData();
+            (*pDataContinue) = dataTmp;
 
             if (dataPool.Size() >= TRAIN_POOL_SIZE)
             {
