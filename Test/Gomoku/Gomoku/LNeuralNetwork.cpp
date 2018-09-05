@@ -33,8 +33,7 @@ public:
         m_weightList.resize(inputNum + 1);
         for (unsigned int i = 0; i < m_weightList.size(); i++)
         {
-            // m_weightList[i] = -0.1;
-            m_weightList[i] = -0.1;
+            m_weightList[i] = RandClamped();
         }
     }
 

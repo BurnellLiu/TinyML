@@ -186,7 +186,7 @@ void Train()
 {
     LAiParam aiParam;
     aiParam.BrainLayersNum = 3;
-    aiParam.LayerNeuronsNum = 64;
+    aiParam.LayerNeuronsNum = 128;
     aiParam.QLearningRate = 0.5;
     aiParam.QLearningGamma = 0.9;
     aiParam.BrainTrainCount = 1000;
