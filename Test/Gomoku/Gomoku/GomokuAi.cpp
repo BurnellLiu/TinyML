@@ -4,9 +4,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <vector>
-#include <map>
 using std::vector;
-using std::map;
 
 #ifdef _DEBUG
 #define DebugPrint(format, ...) printf(format, __VA_ARGS__)
@@ -17,18 +15,18 @@ using std::map;
 #define CHESSMAN_NUM CHESS_BOARD_ROW*CHESS_BOARD_COLUMN     // 棋子总数
 
 /// @brief 打印矩阵
-static void MatrixPrint(IN const LNNMatrix& dataMatrix)
+static void MatrixDebugPrint(IN const LNNMatrix& dataMatrix)
 {
-    printf("Matrix Row: %u  Col: %u\n", dataMatrix.RowLen, dataMatrix.ColumnLen);
+    DebugPrint("Matrix Row: %u  Col: %u\n", dataMatrix.RowLen, dataMatrix.ColumnLen);
     for (unsigned int i = 0; i < dataMatrix.RowLen; i++)
     {
         for (unsigned int j = 0; j < dataMatrix.ColumnLen; j++)
         {
-            printf("%.5f  ", dataMatrix[i][j]);
+            DebugPrint("%.5f  ", dataMatrix[i][j]);
         }
-        printf("\n");
+        DebugPrint("\n");
     }
-    printf("\n");
+    DebugPrint("\n");
 }
 
 
@@ -53,14 +51,16 @@ class CGomokuAi
 {
 public:
     /// @brief 构造函数
-    CGomokuAi()
+    /// @param[in] param Ai参数
+    CGomokuAi(const LAiParam& param)
     {
+        m_aiParam = param;
+
         LBPNetworkPogology pogology;
         pogology.InputNumber = CHESSMAN_NUM;
         pogology.OutputNumber = CHESSMAN_NUM;
-        pogology.HiddenLayerNumber = 2;
-        pogology.NeuronsOfHiddenLayer = 128;
-        m_pBrain = nullptr;
+        pogology.HiddenLayerNumber = param.BrainLayersNum;
+        pogology.NeuronsOfHiddenLayer = param.LayerNeuronsNum;
         m_pBrain = new LBPNetwork(pogology);
 
         m_inputCache.Reset(1, CHESSMAN_NUM);
@@ -169,7 +169,7 @@ public:
     /// @param[in] datas 训练数据
     void Train(IN const vector<LTrainData>& datas)
     {
-        m_trainInputCache1.Reset(datas.size(), CHESSMAN_NUM);
+        m_trainInputCache1.Reset((unsigned int)datas.size(), CHESSMAN_NUM);
 
         for (unsigned int i = 0; i < datas.size(); i++)
         {
@@ -207,14 +207,15 @@ public:
 
                 double currentActionValue = m_trainOutputCache1[i][action];
 
-                double nextActionValueMax = 0.0;
+                double nextActionValueMax = GAME_LOSE_SCORE;
                 for (unsigned int col = 0; col < m_trainOutputCache2.ColumnLen; col++)
                 {
                     if (m_trainOutputCache2[0][col] > nextActionValueMax)
                         nextActionValueMax = m_trainOutputCache2[0][col];
                 }
 
-                newActionValue = currentActionValue + 0.5 * (data.Reward + 0.9 * nextActionValueMax - currentActionValue);
+                double difValue = data.Reward + m_aiParam.QLearningGamma * nextActionValueMax - currentActionValue;
+                newActionValue = currentActionValue + m_aiParam.QLearningRate * difValue;
                 if (newActionValue < GAME_LOSE_SCORE)
                     newActionValue = GAME_LOSE_SCORE;
                 if (newActionValue > GAME_WIN_SCORE)
@@ -229,11 +230,11 @@ public:
         }
 
 
-        unsigned int trainCount = 1000;
+        unsigned int trainCount = m_aiParam.BrainTrainCount;
         for (unsigned int i = 0; i < trainCount; i++)
         {
-            float rate = 3.0f * (trainCount - i) / trainCount;
-            m_pBrain->Train(m_trainInputCache1, m_trainOutputCache1, rate);
+            double rate = (m_aiParam.BrainLearningRate * (trainCount - i)) / trainCount;
+            m_pBrain->Train(m_trainInputCache1, m_trainOutputCache1, (float)rate);
         }
 
     }
@@ -260,6 +261,7 @@ public:
 
 private:
     LBPNetwork* m_pBrain;                   // Ai的大脑
+    LAiParam    m_aiParam;                  // Ai参数
 
     LNNMatrix m_inputCache;                 // 输入缓存, 提高程序执行效率
     LNNMatrix m_outputCache;                // 输出缓存, 提高程序执行效率
@@ -272,9 +274,9 @@ private:
 
 };
 
-LGomokuAi::LGomokuAi()
+LGomokuAi::LGomokuAi(const LAiParam& param)
 {
-    m_pGomokuAi = new CGomokuAi();
+    m_pGomokuAi = new CGomokuAi(param);
 }
 
 LGomokuAi::~LGomokuAi()

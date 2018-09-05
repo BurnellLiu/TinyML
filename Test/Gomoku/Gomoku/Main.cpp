@@ -23,7 +23,6 @@ enum CHESS_BOARD_STATE
 };
 
 
-
 /// @brief 检查棋盘
 /// @param[in] chessBoard 当前棋盘
 /// @param[in] chessPos 下子位置
@@ -182,10 +181,18 @@ CHESS_BOARD_STATE CheckChessBoard(const LChessBoard& chessBoard, LChessPos& ches
 
 }
 
-int main()
+/// @brief 进行训练
+void Train()
 {
-    LGomokuAi ai;
-    //ai.LoadFromFile(".\\1000-Train.bin");
+    LAiParam aiParam;
+    aiParam.BrainLayersNum = 3;
+    aiParam.LayerNeuronsNum = 64;
+    aiParam.QLearningRate = 0.5;
+    aiParam.QLearningGamma = 0.9;
+    aiParam.BrainTrainCount = 1000;
+    aiParam.BrainLearningRate = 3.0;
+
+    LGomokuAi ai(aiParam);
     LChessBoard chessBoardN;            // 正常棋盘
     LChessBoard chessBoardR;            // 反转棋盘(黑白调换)
 
@@ -204,7 +211,7 @@ int main()
         if ((i + 1) % 1000 == 0)
         {
             char fileBuffer[64] = { 0 };
-            sprintf_s(fileBuffer, ".\\%d-Train.bin", (i+1));
+            sprintf_s(fileBuffer, ".\\%d-Train.ai", (i + 1));
             ai.Save2File(fileBuffer);
         }
 
@@ -214,7 +221,6 @@ int main()
 
         // 计算随机率
         double e = (gameCount - i) / (double)(gameCount * 1.5);
-        //e = 0.0001;
 
         while (true)
         {
@@ -223,7 +229,6 @@ int main()
 
             // Ai以黑子身份下棋即在反转棋盘上以白子下棋
             ai.Action(chessBoardR, e, &pos);
-            //DebugPrint("BlackAction: %u %u\n", pos.Row, pos.Col);
 
             LTrainData* pDataBlack = dataPool.NewData();
             pDataBlack->State = chessBoardR;
@@ -241,7 +246,6 @@ int main()
                 if (state == STATE_NONE_WIN)
                     pDataBlack->Reward = GAME_DRAWN_SCORE;
 
-                //system("pause");
                 break;
             }
 
@@ -249,11 +253,10 @@ int main()
 
             chessBoardN[pos.Row][pos.Col] = SPOT_BLACK;
             chessBoardR[pos.Row][pos.Col] = SPOT_WHITE;
-            
+
 
             // Ai以白子身份下棋
             ai.Action(chessBoardN, e, &pos);
-            //DebugPrint("WhiteAction: %u %u\n", pos.Row, pos.Col);
             state = CheckChessBoard(chessBoardN, pos, SPOT_WHITE);
             // 游戏结束
             if (state != STATE_BLACK_WHITE)
@@ -269,20 +272,19 @@ int main()
                     pDataWhite->Reward = GAME_LOSE_SCORE;
                     pDataBlack->Reward = GAME_WIN_SCORE;
                 }
-                    
+
                 if (state == STATE_WHITE_WIN)
                 {
                     pDataWhite->Reward = GAME_WIN_SCORE;
                     pDataBlack->Reward = GAME_LOSE_SCORE;
                 }
-                    
+
                 if (state == STATE_NONE_WIN)
                 {
                     pDataWhite->Reward = GAME_DRAWN_SCORE;
                     pDataBlack->Reward = GAME_DRAWN_SCORE;
                 }
-                    
-                //system("pause");
+
                 break;
             }
 
@@ -292,7 +294,7 @@ int main()
             pDataBlack->GameEnd = false;
             pDataBlack->Reward = GAME_DRAWN_SCORE;
             pDataBlack->NextState = chessBoardR;
-            
+
             if (dataPool.Size() >= TRAIN_POOL_SIZE)
             {
                 DebugPrint("Training...\n");
@@ -318,7 +320,98 @@ int main()
 
     }
 
-    DebugPrint("completed\n");
+    DebugPrint("Training completed\n");
+}
+
+/// @brief 测试
+void Test(char* pFilePath)
+{
+    LAiParam aiParam;
+    aiParam.BrainLayersNum = 2;
+    aiParam.LayerNeuronsNum = 128;
+    aiParam.QLearningRate = 0.5;
+    aiParam.QLearningGamma = 0.9;
+    aiParam.BrainTrainCount = 1000;
+    aiParam.BrainLearningRate = 3.0;
+
+    LGomokuAi ai(aiParam);
+    ai.LoadFromFile(pFilePath);
+
+    LChessBoard chessBoardN;            // 正常棋盘
+    LChessBoard chessBoardR;            // 反转棋盘(黑白调换)
+
+    while (true)
+    {
+        // 重置棋盘
+        chessBoardN.Reset(CHESS_BOARD_ROW, CHESS_BOARD_COLUMN, SPOT_NONE);
+        chessBoardR.Reset(CHESS_BOARD_ROW, CHESS_BOARD_COLUMN, SPOT_NONE);
+
+        while (true)
+        {
+            LChessPos pos;
+            CHESS_BOARD_STATE state;
+
+            // Ai以黑子身份下棋即在反转棋盘上以白子下棋
+            ai.Action(chessBoardR, 0.0, &pos);
+            DebugPrint("Black: %2u %2u \n", pos.Row, pos.Col);
+
+            state = CheckChessBoard(chessBoardR, pos, SPOT_WHITE);
+            // 游戏结束
+            if (state != STATE_BLACK_WHITE)
+            {
+                if (state == STATE_BLACK_WIN)
+                    DebugPrint("End White Win\n");
+                if (state == STATE_WHITE_WIN)
+                    DebugPrint("End Blacke Win\n");
+                if (state == STATE_NONE_WIN)
+                    DebugPrint("End Drawn\n");
+
+                system("pause");
+                break;
+            }
+
+            chessBoardN[pos.Row][pos.Col] = SPOT_BLACK;
+            chessBoardR[pos.Row][pos.Col] = SPOT_WHITE;
+
+            // Ai以白子身份下棋
+            ai.Action(chessBoardN, 0.0, &pos);
+            DebugPrint("White: %2u %2u \n", pos.Row, pos.Col);
+
+            state = CheckChessBoard(chessBoardN, pos, SPOT_WHITE);
+            // 游戏结束
+            if (state != STATE_BLACK_WHITE)
+            {
+                if (state == STATE_BLACK_WIN)
+                {
+                    DebugPrint("End Blacke Win\n");
+                }
+
+                if (state == STATE_WHITE_WIN)
+                {
+                    DebugPrint("End White Win\n");
+                }
+
+                if (state == STATE_NONE_WIN)
+                {
+                    DebugPrint("End Drawn\n");
+                }
+
+                system("pause");
+                break;
+            }
+
+            chessBoardN[pos.Row][pos.Col] = SPOT_WHITE;
+            chessBoardR[pos.Row][pos.Col] = SPOT_BLACK;
+        }
+    }
+
+
+}
+
+int main()
+{
+    Train();
+
     system("pause");
     return 0;
 }

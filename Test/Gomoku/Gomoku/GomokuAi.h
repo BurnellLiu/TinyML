@@ -13,7 +13,7 @@ using std::vector;
 #define SPOT_BLACK          -1.0        // 黑子
 
 #define GAME_WIN_SCORE       1.0        // 赢棋得分
-#define GAME_DRAWN_SCORE     0.0        // 和棋得分
+#define GAME_DRAWN_SCORE     0.05       // 和棋得分
 #define GAME_LOSE_SCORE     -1.0        // 输棋得分
 
 typedef LMatrix<double> LChessBoard;    // 棋盘
@@ -35,6 +35,17 @@ struct LTrainData
     LChessBoard NextState;  // 下个状态
 };
 
+/// @brief Ai参数
+struct LAiParam
+{
+    unsigned int    BrainLayersNum;         // 大脑层数, 范围: [1, +)
+    unsigned int    LayerNeuronsNum;        // 每层神经元数, 范围: 大于等于1
+    double          QLearningRate;          // QLearning学习速度, 范围: (0, 1)
+    double          QLearningGamma;         // QLearning折合因子, 范围: [0, 1]
+    unsigned int    BrainTrainCount;        // 大脑训练次数, 范围: [1, +)
+    double          BrainLearningRate;      // 大脑学习速度, 范围: (0.0, +)
+};
+
 class CGomokuAi;
 
 /// @brief 五子棋Ai, 执白子
@@ -42,7 +53,8 @@ class LGomokuAi
 {
 public:
     /// @brief 构造函数
-    LGomokuAi();
+    /// @param[in] param Ai参数
+    explicit LGomokuAi(const LAiParam& param);
 
     /// @brief 析构函数
     ~LGomokuAi();
