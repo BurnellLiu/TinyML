@@ -52,16 +52,28 @@ class CGomokuAi
 public:
     /// @brief 构造函数
     /// @param[in] param Ai参数
-    CGomokuAi(const LAiParam& param)
+    CGomokuAi(const LAiBrainParam& brainParam)
     {
-        m_aiParam = param;
-
         LBPNetworkPogology pogology;
         pogology.InputNumber = CHESSMAN_NUM;
         pogology.OutputNumber = CHESSMAN_NUM;
-        pogology.HiddenLayerNumber = param.BrainLayersNum;
-        pogology.NeuronsOfHiddenLayer = param.LayerNeuronsNum;
+        pogology.HiddenLayerNumber = brainParam.BrainLayersNum;
+        pogology.NeuronsOfHiddenLayer = brainParam.LayerNeuronsNum;
         m_pBrain = new LBPNetwork(pogology);
+
+        m_inputCache.Reset(1, CHESSMAN_NUM);
+        m_trainInputCache1.Reset(1, CHESSMAN_NUM);
+        m_trainInputCache2.Reset(1, CHESSMAN_NUM);
+
+        m_actionVecCache.reserve(CHESSMAN_NUM);
+    }
+
+    /// @brief 构造函数
+    /// 从文件中加载五子棋Ai
+    /// @param[in] pFilePath 文件路径
+    explicit CGomokuAi(IN char* pFilePath)
+    {
+        m_pBrain = new LBPNetwork(pFilePath);
 
         m_inputCache.Reset(1, CHESSMAN_NUM);
         m_trainInputCache1.Reset(1, CHESSMAN_NUM);
@@ -78,6 +90,13 @@ public:
             delete m_pBrain;
             m_pBrain = nullptr;
         }
+    }
+
+    /// @brief 设置训练参数
+    /// @param[in] trainParam 训练参数
+    void SetTrainParam(const LAiTrainParam& trainParam)
+    {
+        m_trainParam = trainParam;
     }
 
     /// @brief 落子
@@ -184,6 +203,7 @@ public:
                 }
             }
         }
+
         m_pBrain->Active(m_trainInputCache1, &m_trainOutputCache1);
 
         for (unsigned int i = 0; i < datas.size(); i++)
@@ -214,8 +234,8 @@ public:
                         nextActionValueMax = m_trainOutputCache2[0][col];
                 }
 
-                double difValue = data.Reward + m_aiParam.QLearningGamma * nextActionValueMax - currentActionValue;
-                newActionValue = currentActionValue + m_aiParam.QLearningRate * difValue;
+                double difValue = data.Reward + m_trainParam.QLearningGamma * nextActionValueMax - currentActionValue;
+                newActionValue = currentActionValue + m_trainParam.QLearningRate * difValue;
                 if (newActionValue < GAME_LOSE_SCORE)
                     newActionValue = GAME_LOSE_SCORE;
                 if (newActionValue > GAME_WIN_SCORE)
@@ -230,10 +250,10 @@ public:
         }
 
 
-        unsigned int trainCount = m_aiParam.BrainTrainCount;
+        unsigned int trainCount = m_trainParam.BrainTrainCount;
         for (unsigned int i = 0; i < trainCount; i++)
         {
-            double rate = (m_aiParam.BrainLearningRate * (trainCount - i)) / trainCount;
+            double rate = (m_trainParam.BrainLearningRate * (trainCount - i)) / trainCount;
             m_pBrain->Train(m_trainInputCache1, m_trainOutputCache1, (float)rate);
         }
 
@@ -246,22 +266,9 @@ public:
         m_pBrain->Save2File(pFilePath);
     }
 
-    /// @brief 从文件中加载五子棋Ai
-    /// @param[in] pFilePath 文件路径
-    void LoadFromFile(IN char* pFilePath)
-    {
-        if (m_pBrain != nullptr)
-        {
-            delete m_pBrain;
-            m_pBrain = nullptr;
-        }
-
-        m_pBrain = new LBPNetwork(pFilePath);
-    }
-
 private:
-    LBPNetwork* m_pBrain;                   // Ai的大脑
-    LAiParam    m_aiParam;                  // Ai参数
+    LBPNetwork*         m_pBrain;           // Ai的大脑
+    LAiTrainParam       m_trainParam;       // 学习参数
 
     LNNMatrix m_inputCache;                 // 输入缓存, 提高程序执行效率
     LNNMatrix m_outputCache;                // 输出缓存, 提高程序执行效率
@@ -274,9 +281,14 @@ private:
 
 };
 
-LGomokuAi::LGomokuAi(const LAiParam& param)
+LGomokuAi::LGomokuAi(const LAiBrainParam& param)
 {
     m_pGomokuAi = new CGomokuAi(param);
+}
+
+LGomokuAi::LGomokuAi(IN char* pFilePath)
+{
+    m_pGomokuAi = new CGomokuAi(pFilePath);
 }
 
 LGomokuAi::~LGomokuAi()
@@ -286,6 +298,11 @@ LGomokuAi::~LGomokuAi()
         delete m_pGomokuAi;
         m_pGomokuAi = nullptr;
     }
+}
+
+void LGomokuAi::SetTrainParam(const LAiTrainParam& trainParam)
+{
+    m_pGomokuAi->SetTrainParam(trainParam);
 }
 
 void LGomokuAi::Action(IN const LChessBoard& chessBoard, IN double e, OUT LChessPos* pPos)
@@ -303,10 +320,6 @@ void LGomokuAi::Save2File(IN char* pFilePath)
     m_pGomokuAi->Save2File(pFilePath);
 }
 
-void LGomokuAi::LoadFromFile(IN char* pFilePath)
-{
-    m_pGomokuAi->LoadFromFile(pFilePath);
-}
 
 /// @brief 训练数据池
 class CTrainDataPool
