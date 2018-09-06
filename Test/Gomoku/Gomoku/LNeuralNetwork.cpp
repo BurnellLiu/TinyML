@@ -113,7 +113,7 @@ private:
     /// @return 激活值
     double Sigmoid(IN double input)
     {
-        return ( 2.0 / ( 1.0 + exp(-input)) - 1.0);
+        return ( 1.0 / ( 1.0 + exp(-input)));
     }
 
 private:
@@ -215,7 +215,7 @@ public:
 
         for (unsigned int i = 0; i < pFrontOpErrorList->size(); i++)
         {
-            (*pFrontOpErrorList)[i] *= 2.0 * m_inputList[i] * (1.0f-m_inputList[i]);
+            (*pFrontOpErrorList)[i] *= m_inputList[i] * (1.0f-m_inputList[i]);
         }
 
         return true;
@@ -332,7 +332,7 @@ public:
             for (unsigned int i = 0; i < m_outputVectorForTrain.ColumnLen; i++)
             {
                 errorList[i] = outputMatrix[row][i]-m_outputVectorForTrain[0][i];
-                errorList[i] *= 2.0 * m_outputVectorForTrain[0][i] * (1.0f-m_outputVectorForTrain[0][i]);
+                errorList[i] *= m_outputVectorForTrain[0][i] * (1.0f-m_outputVectorForTrain[0][i]);
             }
 
             // 从后向前进行反向训练
