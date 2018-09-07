@@ -5,9 +5,6 @@
 #include <vector>
 using std::vector;
 
-#define CHESS_BOARD_ROW      6         // 棋盘行数
-#define CHESS_BOARD_COLUMN   6         // 棋盘列数
-
 #define SPOT_WHITE           1.0        // 白子
 #define SPOT_NONE            0.0        // 无子
 #define SPOT_BLACK          -1.0        // 黑子
@@ -28,11 +25,19 @@ struct LChessPos
 /// @brief 训练数据
 struct LTrainData
 {
-    bool        GameEnd;    // 标记游戏是否结束
+    LChessPos   PreAction;  // 对手最近动作
     LChessBoard State;      // 当前状态
     LChessPos   Action;     // 执行动作(落子位置)
-    double      Reward;     // 立即回报值(得分值), 1.0(白子赢), 0.05(和棋), 0.0(白子输棋)
+    bool        GameEnd;    // 标记游戏是否结束
+    double      Reward;     // 立即回报值(得分值), 1.0(赢), 0.05(和棋), 0.0(输棋)
     LChessBoard NextState;  // 下个状态
+};
+
+/// @brief 游戏规则
+struct LGameRule
+{
+    unsigned int ContinuNum;                // 连子数
+    unsigned int BoardSize;                 // 棋盘大小, 例: 8, 则表示是8*8的棋盘
 };
 
 /// @brief Ai大脑参数
@@ -48,23 +53,26 @@ struct LAiTrainParam
     double          QLearningRate;          // QLearning学习速度, 范围: (0, 1)
     double          QLearningGamma;         // QLearning折合因子, 范围: [0, 1]
     double          BrainLearningRate;      // 大脑学习速度, 范围: (0.0, +)
-    unsigned int    BrainTrainCount;        // 大脑训练次数, 范围: [1, +)
+    unsigned int    BrainTrainCountMax;     // 大脑最大训练次数, 范围: [1, +)
 };
 
 class CGomokuAi;
 
-/// @brief 五子棋Ai, 执白子
+/// @brief 五子棋Ai
+/// 黑子先手
 class LGomokuAi
 {
 public:
     /// @brief 构造函数
-    /// @param[in] param Ai参数
-    explicit LGomokuAi(const LAiBrainParam& brainParam);
+    /// @param[in] rule 游戏规则
+    /// @param[in] brainParam 大脑参数
+    LGomokuAi(const LGameRule& rule, const LAiBrainParam& brainParam);
 
     /// @brief 构造函数
     /// 从文件中加载五子棋Ai
+    /// @param[in] rule 游戏规则
     /// @param[in] pFilePath 文件路径
-    explicit LGomokuAi(IN char* pFilePath);
+    LGomokuAi(const LGameRule& rule, IN char* pFilePath);
 
     /// @brief 析构函数
     ~LGomokuAi();
@@ -75,9 +83,19 @@ public:
 
     /// @brief 落子
     /// @param[in] chessBoard 当前棋局
-    /// @param[in] e 随机执行动作的概率[0-1](不思考, 随机执行)
+    /// @param[in] preAction 对手最近落子位置, 如果目前为空棋局, 则该值没用
     /// @param[out] pPos 存储落子位置
-    void Action(IN const LChessBoard& chessBoard, IN double e, OUT LChessPos* pPos);
+    void Action(IN const LChessBoard& chessBoard, IN LChessPos& preAction, OUT LChessPos* pPos);
+
+    /// @brief 随机落子
+    /// @param[in] chessBoard 当前棋局
+    /// @param[out] pPos 存储落子位置
+    void ActionRandom(IN const LChessBoard& chessBoard, OUT LChessPos* pPos);
+
+    /// @brief 训练
+    /// 训练前必须至少设置一次训练参数
+    /// @param[in] data 训练数据
+    void Train(IN const LTrainData& data);
 
     /// @brief 训练
     /// 训练前必须至少设置一次训练参数
