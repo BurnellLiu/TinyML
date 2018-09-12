@@ -20,20 +20,29 @@ class PolicyValueNet():
         self.input_states = tf.placeholder(
                 tf.float32, shape=[None, 4, board_height, board_width])
         self.input_state = tf.transpose(self.input_states, [0, 2, 3, 1])
+
         # 2. Common Networks Layers
+
+        # 第一层卷积层, 输入[?, height, width, 4], 输出[?, height, width, 32]
+        # "channels_last"表示维度顺序: 通道在最后
         self.conv1 = tf.layers.conv2d(inputs=self.input_state,
                                       filters=32, kernel_size=[3, 3],
                                       padding="same", data_format="channels_last",
                                       activation=tf.nn.relu)
+
+        # 第二层卷积层, 输入[?, height, width, 32], 输出[?, height, width, 64]
         self.conv2 = tf.layers.conv2d(inputs=self.conv1, filters=64,
                                       kernel_size=[3, 3], padding="same",
                                       data_format="channels_last",
                                       activation=tf.nn.relu)
+
+        # 第二层卷积层, 输入[?, height, width, 64], 输出[?, height, width, 128]
         self.conv3 = tf.layers.conv2d(inputs=self.conv2, filters=128,
                                       kernel_size=[3, 3], padding="same",
                                       data_format="channels_last",
                                       activation=tf.nn.relu)
-        # 3-1 Action Networks
+        # 3-1 动作网络
+        # 进行降维, 输入[?, height, width, 128], 输出[?, height, width, 4]
         self.action_conv = tf.layers.conv2d(inputs=self.conv3, filters=4,
                                             kernel_size=[1, 1], padding="same",
                                             data_format="channels_last",
@@ -43,10 +52,12 @@ class PolicyValueNet():
                 self.action_conv, [-1, 4 * board_height * board_width])
         # 3-2 Full connected layer, the output is the log probability of moves
         # on each slot on the board
+        # 全连接层, 输入[?, 4 * height * width], 输出[?, height * width]
         self.action_fc = tf.layers.dense(inputs=self.action_conv_flat,
                                          units=board_height * board_width,
                                          activation=tf.nn.log_softmax)
-        # 4 Evaluation Networks
+        # 4 价值网络
+        # 进行降维, 输入[?, height, width, 128], 输出[?, height, width, 2]
         self.evaluation_conv = tf.layers.conv2d(inputs=self.conv3, filters=2,
                                                 kernel_size=[1, 1],
                                                 padding="same",
@@ -54,9 +65,10 @@ class PolicyValueNet():
                                                 activation=tf.nn.relu)
         self.evaluation_conv_flat = tf.reshape(
                 self.evaluation_conv, [-1, 2 * board_height * board_width])
+        # 全连接层, 输入[?, 2 * height * width], 输出[?, 64]
         self.evaluation_fc1 = tf.layers.dense(inputs=self.evaluation_conv_flat,
                                               units=64, activation=tf.nn.relu)
-        # output the score of evaluation on current state
+        # 全连接层, 输入[?, 64], 输出[?, 1]
         self.evaluation_fc2 = tf.layers.dense(inputs=self.evaluation_fc1,
                                               units=1, activation=tf.nn.tanh)
 
