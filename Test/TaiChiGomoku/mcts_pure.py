@@ -26,7 +26,7 @@ class MCTSNode(object):
         self.__parent = parent          # 父节点
         self.__children = {}            # 子节点表
 
-        self.__c_uct = c_uct            # 上限置信区间参数,
+        self.__c_uct = c_uct            # 上限置信区间参数
 
         self.__action_prob = prob       # 动作先验概率
         self.__action_q = 0.0           # 动作值
@@ -108,6 +108,8 @@ class MCTSPure:
                 break
             action, current_node = current_node.select()
             state.move(action)
+
+        end, winner = state.game_end()
 
 
 if __name__ == '__main__':
