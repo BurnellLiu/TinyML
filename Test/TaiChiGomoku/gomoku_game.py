@@ -29,9 +29,9 @@ class GomokuBoard(object):
         :param kwargs: 关键字参数
         """
         # 棋盘宽度
-        self.width = int(kwargs.get('width', 4))
+        self.width = int(kwargs.get('width', 3))
         # 棋盘高度
-        self.height = int(kwargs.get('height', 4))
+        self.height = int(kwargs.get('height', 3))
         # 胜利连子数
         self.n_in_row = int(kwargs.get('n_in_row', 3))
         # 最近动作

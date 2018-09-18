@@ -59,7 +59,7 @@ class MCTSNode(object):
         self.__c_uct = c_uct            # 上限置信区间参数
 
         self.__action_prob = prob       # 动作先验概率
-        self.__action_q = 0.0           # 动作值, 代表当前状态下, 接下来下子的玩家的局面状况
+        self.__action_q = 0.0           # 动作值
         self.action_n = 0               # 动作访问次数
 
     def expand(self, actions_prob):
@@ -77,7 +77,7 @@ class MCTSNode(object):
         :return: 返回(动作, 节点)元组
         """
         return max(self.children.items(),
-                   key=lambda action_node: action_node[1].__get_value())
+                   key=lambda action_node: action_node[1].get_value())
 
     def backup(self, leaf_value):
         """
@@ -114,12 +114,13 @@ class MCTSNode(object):
         # 更新动作值
         self.__action_q = sum_value/self.action_n
 
-    def __get_value(self):
+    def get_value(self):
         """
         获取调整后的动作值
         :return:
         """
-        u = self.__c_uct * self.__action_prob / (1 + self.action_n)
+        # np.sqrt(self.__parent.action_n)
+        u = self.__c_uct * self.__action_prob * np.sqrt(self.__parent.action_n) / (1 + self.action_n)
         return self.__action_q + u
 
     def __str__(self):
@@ -127,8 +128,14 @@ class MCTSNode(object):
             self.__action_prob, self.__action_q, self.action_n)
 
 
+def print_node(node, space='', act = None):
+    print(space, act, node)
+    for act, child in node.children.items():
+        print_node(child, space + '  ', act)
+
+
 class MCTSPure:
-    def __init__(self, policy_value_fn=rollout_policy_value_, play_out_n=10000):
+    def __init__(self, policy_value_fn=rollout_policy_value_, play_out_n=5000):
         # 根节点
         self.__root = MCTSNode(None, 1.0)
         # 策略值函数
@@ -139,8 +146,8 @@ class MCTSPure:
         for i in range(self.__play_out_n):
             state_copy = copy.deepcopy(state)
             self.__play_out(state_copy)
-        act_visits = [(act, node.action_n)for act, node in self.__root.children.items()]
-        acts, visits = zip(*act_visits)
+        acts_visits = [(act, node.action_n)for act, node in self.__root.children.items()]
+        acts, visits = zip(*acts_visits)
         probs = visits/np.sum(visits)
 
         self.__root = MCTSNode(None, 1.0)
@@ -153,6 +160,7 @@ class MCTSPure:
             if current_node.is_leaf():
                 break
             action, current_node = current_node.select()
+            #print('select', action)
             state.move(action)
 
         end, winner = state.check_winner()
@@ -167,11 +175,20 @@ class MCTSPure:
                 current_node.backup(0)
             else:
                 # 游戏不是和棋结束, 则代表当前状态下, 接下来下子的玩家输棋, 所以设置评估值为-1
-                current_node.backup(-1)
+                current_node.backup(1)
 
+        #print_node(self.__root)
+        #print("")
 
-if __name__ == '__main__':
+def test():
     board = GomokuBoard()
+
+    #board.move(board.loc_to_action((2, 0)))
+    #board.move(board.loc_to_action((0, 0)))
+    #board.move(board.loc_to_action((1, 2)))
+    #board.move(board.loc_to_action((2, 2)))
+
+
     mcts = MCTSPure()
 
     while True:
@@ -180,7 +197,14 @@ if __name__ == '__main__':
             break
 
         acts, probs = mcts.get_action_probs(board)
-        move = np.random.choice(acts, p=probs)
+        # print(acts, probs)
+        acts_probs = zip(acts, probs )
+        move = max(acts_probs, key=itemgetter(1))[0]
+        #move = np.random.choice(acts, p=probs)
         board.move(move)
         print(board.action_to_loc(move))
+
+
+if __name__ == '__main__':
+    test()
 
