@@ -29,11 +29,11 @@ class GomokuBoard(object):
         :param kwargs: 关键字参数
         """
         # 棋盘宽度
-        self.width = int(kwargs.get('width', 3))
+        self.width = int(kwargs.get('width', 9))
         # 棋盘高度
-        self.height = int(kwargs.get('height', 3))
+        self.height = int(kwargs.get('height', 9))
         # 胜利连子数
-        self.n_in_row = int(kwargs.get('n_in_row', 3))
+        self.n_in_row = int(kwargs.get('n_in_row', 5))
         # 最近动作
         self.last_action = -1
         # 黑子先手

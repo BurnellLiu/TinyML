@@ -151,12 +151,16 @@ class MCTSNode(object):
         return self.__action_q + u
 
     def __str__(self):
-        return "MCTSNode: Prob: {}, Q: {}, N: {}".format(
-            self.__action_prob, self.__action_q, self.__action_n)
+        if self.__parent is None:
+            return "MCTSNode: Prob: {}, Q: {}, N: {}".format(
+                self.__action_prob, self.__action_q, self.__action_n)
+        else:
+            return "MCTSNode: Prob: {}, Q: {}, N: {} Value: {}".format(
+                self.__action_prob, self.__action_q, self.__action_n, self.__get_value())
 
 
 class MCTS:
-    def __init__(self, policy_value_fn=rollout_policy_value, play_out_n=500):
+    def __init__(self, policy_value_fn=rollout_policy_value, play_out_n=4000):
         """
         构造函数
         :param policy_value_fn: 策略值函数
@@ -182,11 +186,13 @@ class MCTS:
         actions_counts = [(action, child.get_action_count()) for action, child in children]
         # 解压数据
         actions, counts = zip(*actions_counts)
+        # print(counts)
         sum_count = sum(counts)
         # 计算每个动作的概率
         probs = tuple(map(lambda count: count/sum_count, counts))
 
         # 重置蒙特卡洛树搜索
+        # print_node(self.__root)
         self.__root = MCTSNode(None, 1.0)
 
         return actions, probs
@@ -232,21 +238,34 @@ def print_node(node, space='', action=None):
 def play_test():
 
     board = GomokuBoard()
-    mcts = MCTS()
+
+    mcts_play1 = MCTS(play_out_n=2000)
+    mcts_play2 = MCTS(play_out_n=4000)
 
     while True:
-        end, winner = board.check_winner()
-        if end:
-            break
-
-        acts, probs = mcts.get_action_probs(board)
+        acts, probs = mcts_play1.get_action_probs(board)
         acts_probs = zip(acts, probs)
         # 找出最大概率的动作
         move = max(acts_probs, key=itemgetter(1))[0]
         board.move(move)
 
-        print(board.action_to_loc(move))
+        end, winner = board.check_winner()
+        if end:
+            print(winner)
+            break
+
+        acts, probs = mcts_play2.get_action_probs(board)
+        acts_probs = zip(acts, probs)
+        # 找出最大概率的动作
+        move = max(acts_probs, key=itemgetter(1))[0]
+        board.move(move)
+        end, winner = board.check_winner()
+        if end:
+            print(winner)
+            break
 
 
 if __name__ == '__main__':
-    play_test()
+    for i in range(10):
+        play_test()
+
