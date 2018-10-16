@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-单纯蒙特卡洛树搜索实现
+蒙特卡洛树搜索实现
 
 @author: CoderJie
 @email: coderjie@outlook.com
