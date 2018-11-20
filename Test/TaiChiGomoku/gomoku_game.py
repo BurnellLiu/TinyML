@@ -9,6 +9,7 @@
 """
 
 from enum import Enum, unique
+import numpy as np
 
 
 @unique
@@ -45,6 +46,41 @@ class GomokuBoard(object):
         if self.width < self.n_in_row or self.height < self.n_in_row:
             raise Exception('GomokuBoard width and height can not be '
                             'less than {}'.format(self.n_in_row))
+
+    def current_state(self):
+        """
+        当前局面描述
+        :return: 4*height*width的局面描述
+        """
+
+        # 使用4个height*width的二值特征平面来描述局面
+        # 第一个平面是当前玩家的棋子位置, 有棋子的位置是1, 没棋子的位置是0
+        # 第二个平面是对手玩家的棋子位置, 有棋子的位置是1, 没棋子的位置是0
+        # 第三个平面是对手玩家最近的落子位置, 整个平面只有一个位置是1, 其余全是0
+        # 第四个平面表示当前玩家是否是先手玩家, 是则整个平面全为1, 否正全为0
+
+        square_state = np.zeros((4, self.height, self.width))
+
+        if self.current_player == GomokuPlayer.Black:
+            riva_player = GomokuPlayer.White
+        else:
+            riva_player = GomokuPlayer.Black
+
+        for row in range(self.height):
+            for col in range(self.width):
+                if self.state[row][col] == self.current_player:
+                    square_state[0][row][col] = 1.0
+                elif self.state[row][col] == riva_player:
+                    square_state[1][row][col] = 1.0
+
+        if self.last_action != -1:
+            row, col = self.action_to_loc(self.last_action)
+            square_state[2][row][col] = 1.0
+
+        if self.current_player == GomokuPlayer.Black:
+            square_state[3][:, :] = 1.0
+
+        return square_state
 
     def move(self, action):
         """
@@ -194,6 +230,7 @@ class GomokuBoard(object):
 
 if __name__ == '__main__':
     board = GomokuBoard()
+    print(board.current_state())
     board.move(board.loc_to_action((0, 0)))
     print(board.check_winner())
     board.move(board.loc_to_action((7, 0)))

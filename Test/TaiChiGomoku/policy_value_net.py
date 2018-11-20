@@ -58,16 +58,16 @@ class PolicyValueNet:
         if model_file is not None:
             self.restore_model(model_file)
 
-    def policy_value(self, input_data):
+    def policy_value(self, datas):
         """
         获取策略, 状态值
-        :param input_data: 输入数据
+        :param datas: 批量数据
         :return:
         """
-        log_probs, value = self.__session.run([self.__policy_fc, self.__value_fc2],
-                                              feed_dict={self.__input_data: input_data})
+        log_probs, values = self.__session.run([self.__policy_fc, self.__value_fc2],
+                                               feed_dict={self.__input_data: datas})
         acts_probs = np.exp(log_probs)
-        return acts_probs, value
+        return acts_probs, values
 
     def save_model(self, path):
         """
@@ -195,5 +195,5 @@ class PolicyValueNet:
 
 if __name__ == '__main__':
     net = PolicyValueNet(2, 2)
-    data = np.float32(np.random.rand(1, 4, 2, 2))
+    data = np.float32(np.random.rand(2, 4, 2, 2))
     print(net.policy_value(data))
