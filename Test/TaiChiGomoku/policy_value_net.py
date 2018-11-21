@@ -85,6 +85,7 @@ class PolicyValueNet:
         input_data = state.reshape(-1, 4, self.__board_height, self.__board_width)
         acts_prob, state_value = self.__policy_value(input_data)
 
+        # 只获取有效动作的概率
         avl_acts = board.avl_actions
         acts_prob = list(zip(avl_acts, acts_prob[0][avl_acts]))
         return acts_prob, state_value[0][0]
