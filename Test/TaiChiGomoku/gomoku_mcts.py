@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-蒙特卡洛树搜索实现
+五子棋蒙特卡洛树搜索实现
 
 @author: CoderJie
 @email: coderjie@outlook.com
@@ -11,37 +11,38 @@
 import copy
 import random
 import math
+import numpy as np
 
 from gomoku_game import GomokuPlayer
 from gomoku_game import GomokuBoard
 from operator import itemgetter
 
 
-def rollout_policy_value(state):
+def rollout_policy_value(board):
     """
     随机rollout策略值
-    :param state: 状态
+    :param board: 棋盘
     :return:动作概率, 以及状态值
     """
     # 针对每个动作计算平均概率
-    avg_probs = [1.0/len(state.avl_actions) for i in range(len(state.avl_actions))]
-    actions_probs = list(zip(state.avl_actions, avg_probs))
+    avg_probs = [1.0 / len(board.avl_actions) for i in range(len(board.avl_actions))]
+    actions_probs = list(zip(board.avl_actions, avg_probs))
 
     state_value = 0.0
     # 随机进行动作计算状态值
-    current_player = state.current_player
-    for i in range(state.width * state.height):
+    current_player = board.current_player
+    for i in range(board.width * board.height):
         # rand_probs = np.random.rand(len(state.avl_actions))
         # 给各个动作随机出不同的概率
-        rand_probs = [random.random() for i in range(len(state.avl_actions))]
-        rand_action_probs = zip(state.avl_actions, rand_probs)
+        rand_probs = [random.random() for j in range(len(board.avl_actions))]
+        rand_action_probs = zip(board.avl_actions, rand_probs)
 
         # 找出概率值最大的动作
         max_action = max(rand_action_probs, key=itemgetter(1))[0]
         # 进行动作
-        state.move(max_action)
+        board.move(max_action)
         # 判断游戏是否结束, 以及胜利者
-        end, winner = state.check_winner()
+        end, winner = board.check_winner()
         if end:
             if winner == current_player:
                 state_value = 1.0
@@ -180,15 +181,17 @@ class MCTS:
         self.__policy_value = policy_value_fn
         self.__play_out_n = play_out_n
 
-    def get_action_probs(self, state):
+    def get_action_probs(self, board):
         """
-        根据当前状态进行蒙特卡洛树搜索, 获取进行下个动作概率
+        根据当前棋盘进行蒙特卡洛树搜索, 获取进行下个动作概率
+        :param board: 棋盘
+        :return:
         """
 
         # 进行多次模拟
         for i in range(self.__play_out_n):
-            state_copy = copy.deepcopy(state)
-            self.__play_out(state_copy)
+            board_copy = copy.deepcopy(board)
+            self.__play_out(board_copy)
 
         # 获取每个动作进行的次数
         children = self.__root.get_children().items()
@@ -223,10 +226,10 @@ class MCTS:
         """
         self.__root = MCTSNode(None, 1.0)
 
-    def __play_out(self, state):
+    def __play_out(self, board):
         """
         进行一次模拟
-        :param state: 当前状态, 本方法会修改状态
+        :param board: 棋盘, 本方法会改动棋盘进行模拟
         """
         # 根据以往模拟进行动作, 直到新区域
         current_node = self.__root
@@ -234,14 +237,14 @@ class MCTS:
             if current_node.is_leaf():
                 break
             action, current_node = current_node.select()
-            state.move(action)
+            board.move(action)
 
         # 检查游戏是否结束以及胜利者
-        end, winner = state.check_winner()
+        end, winner = board.check_winner()
 
         if not end:
             # 获取动作概率, 以及状态值
-            actions_probs, state_value = self.__policy_value(state)
+            actions_probs, state_value = self.__policy_value(board)
             current_node.expand(actions_probs)
             # 状态值表明的是当前状态下当前玩家的优劣状况
             # 进入该状态的动作由前一玩家进行, 所以动作值取反
@@ -266,16 +269,16 @@ class MCTSPlayer:
         """
         self.__mcts = MCTS(rollout_policy_value, play_out_n)
 
-    def get_action(self, state):
+    def get_action(self, board):
         """
         获取动作
         """
         # 如果游戏已经结束则返回None
-        end, winner = state.check_winner()
+        end, winner = board.check_winner()
         if end:
             return None
 
-        acts, probs = self.__mcts.get_action_probs(state)
+        acts, probs = self.__mcts.get_action_probs(board)
         acts_probs = zip(acts, probs)
 
         # 找出最大概率的动作
@@ -296,23 +299,29 @@ class MCTSSelfPlayer:
         """
         self.__mcts = MCTS(policy_value_fn, play_out_n)
 
-    def get_action(self, state):
+    def get_action(self, board):
         """
         获取动作
         """
         # 如果游戏已经结束则返回None
-        end, winner = state.check_winner()
+        end, winner = board.check_winner()
         if end:
             return None
 
-        acts, probs = self.__mcts.get_action_probs(state)
-        acts_probs = zip(acts, probs)
+        acts, probs = self.__mcts.get_action_probs(board)
+        self.__mcts.reset()
 
-        # 找出最大概率的动作
-        action = max(acts_probs, key=itemgetter(1))[0]
-        self.__mcts.update_action(action)
+        # 蒙特卡洛树搜索返回的是可执行动作的概率
+        # 作为训练数据, 我们需要把不可执行的动作的概率值设置为0
+        all_acts_probs = np.zeros(board.height*board.width)
+        all_acts_probs[list(acts)] = probs
 
-        return action
+        # 为了提高训练数据的多样性, 我们需要在概率值上增加噪声
+        # 在概率分布上选择一个动作
+        action = np.random.choice(acts,
+                                  p=0.75 * np.array(probs) + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs))))
+
+        return action, all_acts_probs
 
 
 def print_node(node, space='', action=None):
@@ -325,11 +334,11 @@ def print_board(board):
     print('')
     for row in range(board.height):
         for col in range(board.width):
-            if board.state[row][col] == GomokuPlayer.Nobody:
+            if board.board[row][col] == GomokuPlayer.Nobody:
                 print(' - ', end='')
-            if board.state[row][col] == GomokuPlayer.Black:
+            if board.board[row][col] == GomokuPlayer.Black:
                 print(' X ', end='')
-            if board.state[row][col] == GomokuPlayer.White:
+            if board.board[row][col] == GomokuPlayer.White:
                 print(' O ', end='')
         print('')
     print('')
@@ -338,10 +347,10 @@ def print_board(board):
 def play_test():
 
     board = GomokuBoard()
-    player = MCTSPlayer(10000)
+    player = MCTSSelfPlayer(rollout_policy_value, 10000)
 
     while True:
-        action = player.get_action(board)
+        action, _ = player.get_action(board)
         board.move(action)
         print_board(board)
         end, winner = board.check_winner()

@@ -58,16 +58,36 @@ class PolicyValueNet:
         if model_file is not None:
             self.restore_model(model_file)
 
-    def policy_value(self, datas):
+    def train(self, batch_states, batch_probs, batch_values, lr):
         """
-        获取策略, 状态值
-        :param datas: 批量数据
-        :return:
+        训练模型
+        :param batch_states: 批量状态(形状为[?, 4, height, width])
+        :param batch_probs: 批量概率(形状为[?, height*width])
+        :param batch_values: 批量状态值(形状为[?, 1])
+        :param lr: 学习速度(浮点数)
+        :return: 损失值, 熵
         """
-        log_probs, values = self.__session.run([self.__policy_fc, self.__value_fc2],
-                                               feed_dict={self.__input_data: datas})
-        acts_probs = np.exp(log_probs)
-        return acts_probs, values
+        loss, entropy, _ = self.__session.run(
+                [self.__total_loss, self.__entropy, self.__optimizer],
+                feed_dict={self.__input_data: batch_states,
+                           self.__train_prob: batch_probs,
+                           self.__train_value: batch_values,
+                           self.__learning_rate: lr})
+        return loss, entropy
+
+    def policy_value(self, board):
+        """
+        获取策略(动作概率), 状态值
+        :param board: 棋盘对象
+        :return: 策略(动作概率), 状态值
+        """
+        state = board.state()
+        input_data = state.reshape(-1, 4, self.__board_height, self.__board_width)
+        acts_prob, state_value = self.__policy_value(input_data)
+
+        avl_acts = board.avl_actions
+        acts_prob = list(zip(avl_acts, acts_prob[0][avl_acts]))
+        return acts_prob, state_value[0][0]
 
     def save_model(self, path):
         """
@@ -192,8 +212,14 @@ class PolicyValueNet:
         self.__entropy = tf.negative(tf.reduce_mean(
                 tf.reduce_sum(tf.exp(self.__policy_fc) * self.__policy_fc, 1)))
 
+    def __policy_value(self, states):
+        """
+        获取策略(动作概率), 状态值
+        :param states: 批量状态二值数据, 数据形状应该为[?, 4, height, width]
+        :return: 策略(形状: [?, height*width]), 状态值(形状: [?, 1])
+        """
+        log_probs, values = self.__session.run([self.__policy_fc, self.__value_fc2],
+                                               feed_dict={self.__input_data: states})
+        acts_probs = np.exp(log_probs)
+        return acts_probs, values
 
-if __name__ == '__main__':
-    net = PolicyValueNet(2, 2)
-    data = np.float32(np.random.rand(2, 4, 2, 2))
-    print(net.policy_value(data))
