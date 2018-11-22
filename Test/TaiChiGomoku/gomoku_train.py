@@ -188,10 +188,13 @@ def train():
             print("Rival({}), Net Win Ratio: {:.2f}", rival_play_out_n, win_ratio)
             if win_ratio > best_win_ratio:
                 global best_win_ratio
-                global rival_play_out_n
                 best_win_ratio = win_ratio
-                rival_play_out_n += 1000
                 net.save_model(".\\BestModel\\GomokuAi")
+            if best_win_ratio >= 1.0:
+                global best_win_ratio
+                global rival_play_out_n
+                best_win_ratio = 0.0
+                rival_play_out_n += 1000
 
 
 if __name__ == '__main__':
