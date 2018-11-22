@@ -262,12 +262,12 @@ class MCTSPlayer:
     """
     纯蒙特卡洛树搜索玩家
     """
-    def __init__(self, play_out_n=1000):
+    def __init__(self, policy_value_fn, play_out_n=1000):
         """
         构造函数
         :param play_out_n: 模拟次数
         """
-        self.__mcts = MCTS(rollout_policy_value, play_out_n)
+        self.__mcts = MCTS(policy_value_fn, play_out_n)
 
     def get_action(self, board):
         """
@@ -346,11 +346,11 @@ def print_board(board):
 
 def play_test():
 
-    board = GomokuBoard()
-    player = MCTSSelfPlayer(rollout_policy_value, 10000)
+    board = GomokuBoard(width=6, height=6, n_in_row=4)
+    player = MCTSPlayer(rollout_policy_value, 10000)
 
     while True:
-        action, _ = player.get_action(board)
+        action = player.get_action(board)
         board.move(action)
         print_board(board)
         end, winner = board.check_winner()
