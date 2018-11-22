@@ -182,17 +182,16 @@ def train():
                 total_entropy += entropy
             print("Loss: {:.2f}, Entropy: {:.2f}".format(total_loss/train_epochs, total_entropy/train_epochs))
 
+        global best_win_ratio
+        global rival_play_out_n
         if (i+1) % check_freq == 0:
             net.save_model(".\\CurrentModel\\GomokuAi")
             win_ratio = policy_evaluate(net)
             print("Rival({}), Net Win Ratio: {:.2f}", rival_play_out_n, win_ratio)
             if win_ratio > best_win_ratio:
-                global best_win_ratio
                 best_win_ratio = win_ratio
                 net.save_model(".\\BestModel\\GomokuAi")
             if best_win_ratio >= 1.0:
-                global best_win_ratio
-                global rival_play_out_n
                 best_win_ratio = 0.0
                 rival_play_out_n += 1000
 
