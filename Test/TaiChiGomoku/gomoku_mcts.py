@@ -14,7 +14,6 @@ import math
 import numpy as np
 
 from gomoku_game import GomokuPlayer
-from gomoku_game import GomokuBoard
 from operator import itemgetter
 
 
@@ -290,7 +289,7 @@ class MCTSPlayer:
 
 class MCTSSelfPlayer:
     """
-    蒙特卡洛树搜索自弈玩家
+    蒙特卡洛树搜索自弈玩家(用于生成训练数据)
     """
     def __init__(self, policy_value_fn, play_out_n=1000):
         """
@@ -318,8 +317,8 @@ class MCTSSelfPlayer:
 
         # 为了提高训练数据的多样性, 我们需要在概率值上增加噪声
         # 在概率分布上选择一个动作
-        action = np.random.choice(acts,
-                                  p=0.75 * np.array(probs) + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs))))
+        noise = np.random.dirichlet(0.3 * np.ones(len(probs)))
+        action = np.random.choice(acts, p=0.75 * np.array(probs) + 0.25 * noise)
 
         return action, all_acts_probs
 
@@ -329,36 +328,4 @@ def print_node(node, space='', action=None):
     for action, child in node.get_children().items():
         print_node(child, space + '  ', action)
 
-
-def print_board(board):
-    print('')
-    for row in range(board.height):
-        for col in range(board.width):
-            if board.board[row][col] == GomokuPlayer.Nobody:
-                print(' - ', end='')
-            if board.board[row][col] == GomokuPlayer.Black:
-                print(' X ', end='')
-            if board.board[row][col] == GomokuPlayer.White:
-                print(' O ', end='')
-        print('')
-    print('')
-
-
-def play_test():
-
-    board = GomokuBoard(width=6, height=6, n_in_row=4)
-    player = MCTSPlayer(rollout_policy_value, 10000)
-
-    while True:
-        action = player.get_action(board)
-        board.move(action)
-        print_board(board)
-        end, winner = board.check_winner()
-        if end:
-            print('Winner: ', winner)
-            break
-
-
-if __name__ == '__main__':
-    play_test()
 

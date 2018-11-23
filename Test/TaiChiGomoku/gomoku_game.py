@@ -227,25 +227,15 @@ class GomokuBoard(object):
             raise Exception('Location error: {}'.format(loc))
         return action
 
-
-if __name__ == '__main__':
-    board = GomokuBoard()
-    print(board.state())
-    board.move(board.loc2action((0, 0)))
-    print(board.check_winner())
-    board.move(board.loc2action((7, 0)))
-    print(board.check_winner())
-    board.move(board.loc2action((1, 1)))
-    print(board.check_winner())
-    board.move(board.loc2action((6, 1)))
-    print(board.check_winner())
-    board.move(board.loc2action((2, 2)))
-    print(board.check_winner())
-    board.move(board.loc2action((5, 2)))
-    print(board.check_winner())
-    board.move(board.loc2action((3, 3)))
-    print(board.check_winner())
-    board.move(board.loc2action((4, 3)))
-    print(board.check_winner())
-
-
+    def dbg_print(self):
+        print('')
+        for row in range(self.height):
+            for col in range(self.width):
+                if self.board[row][col] == GomokuPlayer.Nobody:
+                    print(' - ', end='')
+                if self.board[row][col] == GomokuPlayer.Black:
+                    print(' X ', end='')
+                if self.board[row][col] == GomokuPlayer.White:
+                    print(' O ', end='')
+            print('')
+        print('')
