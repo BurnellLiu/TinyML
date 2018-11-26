@@ -36,13 +36,16 @@ class NetTrainer:
         # 重复训练次数
         self.repeat_train_epochs = 5
         # 训练时MCTS模拟次数
-        self.train_play_out_n = 1000
+        self.train_play_out_n = 2000
         # 学习速度
-        self.learn_rate = 2e-3
+        # self.learn_rate = 2e-3
+        # 尝试修改学习速度
+        self.learn_rate = 5e-4
         # 批量训练数据大小
-        self.batch_size = 500
+        # self.batch_size = 500
+        self.batch_size = 1000
         # 训练池最大大小
-        self.buffer_max_size = 10000
+        self.buffer_max_size = 20000
         # 训练数据缓冲池
         self.data_buffer = deque(maxlen=self.buffer_max_size)
 
@@ -113,7 +116,7 @@ class NetTrainer:
 
         return extend_data
 
-    def policy_evaluate(self):
+    def policy_evaluate(self, show=None):
         """
         棋力评估
         :return: 胜率
@@ -132,7 +135,11 @@ class NetTrainer:
                 action = net_player.get_action(game_board)
                 game_board.move(action)
                 end, winner = game_board.check_winner()
+                if show:
+                    game_board.dbg_print()
                 if end:
+                    if show:
+                        print(winner)
                     if winner == GomokuPlayer.Black:
                         net_win += 1
                     break
@@ -140,7 +147,11 @@ class NetTrainer:
                 action = mcts_player.get_action(game_board)
                 game_board.move(action)
                 end, winner = game_board.check_winner()
+                if show:
+                    game_board.dbg_print()
                 if end:
+                    if show:
+                        print(winner)
                     break
 
         # MCTS玩家执黑棋先手
@@ -152,14 +163,22 @@ class NetTrainer:
                 action = mcts_player.get_action(game_board)
                 game_board.move(action)
                 end, winner = game_board.check_winner()
+                if show:
+                    game_board.dbg_print()
                 if end:
+                    if show:
+                        print(winner)
                     break
 
                 action = net_player.get_action(game_board)
                 game_board.move(action)
                 end, winner = game_board.check_winner()
+                if show:
+                    game_board.dbg_print()
                 if end:
-                    if winner == GomokuPlayer.Black:
+                    if show:
+                        print(winner)
+                    if winner == GomokuPlayer.White:
                         net_win += 1
                     break
 
@@ -224,5 +243,6 @@ class NetTrainer:
 
 
 if __name__ == '__main__':
-    trainer = NetTrainer()
+    trainer = NetTrainer(".\\CurrentModel\\GomokuAi")
     trainer.run()
+    # trainer.policy_evaluate(show=True)
