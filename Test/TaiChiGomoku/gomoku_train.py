@@ -40,7 +40,7 @@ class NetTrainer:
         # 学习速度
         # self.learn_rate = 2e-3
         # 尝试修改学习速度
-        self.learn_rate = 5e-4
+        self.learn_rate = 2e-4
         # 批量训练数据大小
         # self.batch_size = 500
         self.batch_size = 1000
