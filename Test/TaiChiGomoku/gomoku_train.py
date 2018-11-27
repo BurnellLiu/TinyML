@@ -245,4 +245,3 @@ class NetTrainer:
 if __name__ == '__main__':
     trainer = NetTrainer(".\\CurrentModel\\GomokuAi")
     trainer.run()
-    # trainer.policy_evaluate(show=True)
