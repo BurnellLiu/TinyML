@@ -58,6 +58,12 @@ class PolicyValueNet:
         if model_file is not None:
             self.restore_model(model_file)
 
+    def __del__(self):
+        """
+        析构函数
+        """
+        self.__session.close()
+
     def train(self, batch_states, batch_probs, batch_values, lr):
         """
         训练模型

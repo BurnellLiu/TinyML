@@ -286,6 +286,24 @@ class MCTSPlayer:
 
         return action
 
+    def get_action_prob(self, board):
+        """
+        获取动作
+        """
+        # 如果游戏已经结束则返回None
+        end, winner = board.check_winner()
+        if end:
+            return None
+
+        acts, probs = self.__mcts.get_action_probs(board)
+        acts_probs = zip(acts, probs)
+
+        # 找出最大概率的动作
+        action_prob = max(acts_probs, key=itemgetter(1))
+        self.__mcts.reset()
+
+        return action_prob
+
 
 class MCTSSelfPlayer:
     """
