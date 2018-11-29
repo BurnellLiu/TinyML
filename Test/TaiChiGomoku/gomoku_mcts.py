@@ -197,8 +197,9 @@ class MCTS:
         actions_counts = [(action, child.get_action_count()) for action, child in children]
         # 解压数据
         actions, counts = zip(*actions_counts)
-        # 计算次数进行的平方, 这样会使得动作次数多的计算出的概率更大
-        counts = tuple(map(lambda count: math.pow(count, 2), counts))
+
+        # 访问次数加上1, 避免访问次数为0, 得到概率为0的状况
+        counts = tuple(map(lambda count: count+1, counts))
         sum_count = sum(counts)
         # 计算每个动作的概率, 概率正比于该动作被进行的次数
         probs = tuple(map(lambda count: count/sum_count, counts))
